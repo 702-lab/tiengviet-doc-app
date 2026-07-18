@@ -575,6 +575,7 @@ const styles = StyleSheet.create({
   storyCard: {
     borderRadius: 20,
     borderWidth: 2,
+    borderBottomWidth: 5,
     padding: 16,
     marginBottom: 12,
   },
@@ -591,6 +592,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 20,
     borderWidth: 2,
+    borderBottomWidth: 5,
     padding: 16,
     marginBottom: 12,
     alignItems: 'center',
