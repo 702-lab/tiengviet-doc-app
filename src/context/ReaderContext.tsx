@@ -27,8 +27,10 @@ interface ReaderContextType {
   isAssessing: boolean;
   wordAssessment: { [tokenId: string]: 'correct' | 'incorrect' } | null;
   assessmentScore: number | null;
+  recordedAudioUri: string | null;
   startRecording: () => Promise<void>;
   stopRecordingAndAssess: () => Promise<void>;
+  playRecordedAudio: () => Promise<void>;
   clearAssessment: () => void;
 
   // Giao diện sáng/tối
@@ -66,6 +68,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isAssessing, setIsAssessing] = useState(false);
   const [wordAssessment, setWordAssessment] = useState<{ [tokenId: string]: 'correct' | 'incorrect' } | null>(null);
   const [assessmentScore, setAssessmentScore] = useState<number | null>(null);
+  const [recordedAudioUri, setRecordedAudioUri] = useState<string | null>(null);
 
   // Theme sáng/tối
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -320,6 +323,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const recording = recordingRef.current;
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
+      setRecordedAudioUri(uri); // Lưu lại URI của file ghi âm
       recordingRef.current = null;
 
       Alert.alert(
@@ -353,6 +357,28 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err) {
       console.error('Không thể dừng ghi âm:', err);
       setIsAssessing(false);
+    }
+  };
+
+  // Phát lại âm thanh giọng bé đã ghi âm locally
+  const playRecordedAudio = async () => {
+    if (!recordedAudioUri) return;
+    try {
+      stop(); // Dừng mọi TTS đang phát âm
+      
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: recordedAudioUri },
+        { shouldPlay: true }
+      );
+
+      newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          newSound.unloadAsync();
+        }
+      });
+    } catch (err) {
+      console.warn('Lỗi phát âm thanh đã ghi âm:', err);
+      Alert.alert('Thông báo', 'Không thể phát lại giọng đọc. Vui lòng ghi âm thử lại!');
     }
   };
 
@@ -430,6 +456,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const clearAssessment = () => {
     setWordAssessment(null);
     setAssessmentScore(null);
+    setRecordedAudioUri(null); // Xóa cache ghi âm
   };
 
   useEffect(() => {
@@ -465,8 +492,10 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isAssessing,
         wordAssessment,
         assessmentScore,
+        recordedAudioUri,
         startRecording,
         stopRecordingAndAssess,
+        playRecordedAudio,
         clearAssessment,
 
         theme,
