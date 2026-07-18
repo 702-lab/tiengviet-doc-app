@@ -13,7 +13,7 @@ function MainApp() {
   return (
     <SafeAreaView style={[
       styles.safeArea, 
-      { backgroundColor: isDark ? COLORS.darkBackground : COLORS.background }
+      { backgroundColor: isDark ? COLORS.bgDark : COLORS.bg }
     ]}>
       <StatusBar 
         barStyle={isDark ? 'light-content' : (Platform.OS === 'ios' ? 'dark-content' : 'default')}

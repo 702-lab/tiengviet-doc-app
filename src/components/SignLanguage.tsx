@@ -5,172 +5,122 @@ import { MouthSvg } from './MouthSvg';
 import { HandSignSvg } from './HandSignSvg';
 import { COLORS } from '../theme/colors';
 
-const MOUTH_GUIDE: { [key: string]: string } = {
-  'a': 'Mở miệng rộng tự nhiên, lưỡi hạ thấp dưới đáy miệng.',
-  'ă': 'Miệng mở rộng trung bình, cơ miệng căng hơn âm A.',
-  'â': 'Miệng mở hé nhỏ, hơi đẩy ra ngắn dứt khoát.',
-  'e': 'Mở miệng rộng sang hai bên, hai khóe môi kéo nhẹ ra.',
-  'ê': 'Mở miệng vừa phải sang hai bên, lưỡi nâng lên cao hơn âm E.',
-  'i': 'Khóe môi kéo căng sang hai bên như đang cười, lưỡi nâng cao.',
-  'y': 'Khóe môi kéo căng sang hai bên như đang cười, lưỡi nâng cao.',
-  'o': 'Môi tròn căng và thu nhỏ lại, lưỡi hơi lùi về phía sau.',
-  'ô': 'Môi tròn thu nhỏ hơn âm O, miệng hơi nhô ra phía trước.',
-  'ơ': 'Môi mở hờ tự nhiên không tròn, hơi đẩy ra đều đặn.',
-  'u': 'Môi tròn và chum nhỏ hết cỡ nhô ra ngoài, lưỡi nâng cao.',
-  'ư': 'Hai răng hơi khép lại, môi mở dẹt ngang, lưỡi để tự nhiên.',
-  'b': 'Hai môi mím chặt lại tích hơi, sau đó bật nhẹ hơi ra ngoài.',
-  'c': 'Gốc lưỡi chạm vào vòm họng trên rồi hạ nhanh xuống tạo âm.',
-  'ch': 'Thân lưỡi ép chặt vào vòm miệng trên rồi bật nhẹ hơi ra.',
-  'd': 'Đầu lưỡi chạm răng trên rồi rụt lại, tạo luồng hơi ma sát.',
-  'đ': 'Đầu lưỡi chạm vào lợi răng trên rồi bật mạnh ra ngoài.',
-  'g': 'Gốc lưỡi nâng lên chạm vòm mềm họng rồi bật hạ xuống.',
-  'h': 'Mở miệng tự nhiên, thở hơi nhẹ từ sâu trong cổ họng ra.',
-  'k': 'Gốc lưỡi chạm vào vòm họng trên rồi hạ nhanh xuống tạo âm.',
-  'kh': 'Gốc lưỡi hơi nâng lên tạo khe hẹp ở họng, đẩy luồng hơi ma sát.',
-  'l': 'Đầu lưỡi cong lên chạm nướu răng trên rồi hạ xuống để hơi thoát ra hai bên.',
-  'm': 'Mím môi lại, hơi đi lên qua đường mũi (âm mũi).',
-  'n': 'Đầu lưỡi chạm nướu răng trên, hơi đi lên qua đường mũi.',
-  'ng': 'Gốc lưỡi chạm vòm họng dưới, hơi đi lên qua đường mũi.',
-  'ngh': 'Gốc lưỡi chạm vòm họng dưới, hơi đi lên qua đường mũi.',
-  'nh': 'Mặt lưỡi áp sát vòm miệng trên, hơi đi lên qua đường mũi.',
-  'ph': 'Răng trên chạm nhẹ vào môi dưới, đẩy luồng hơi thoát ra.',
-  'qu': 'Môi tròn nhô ra trước phát âm CỜ rồi mở nhanh ra.',
-  'r': 'Đầu lưỡi cong nhẹ chạm vòm miệng cứng, đẩy hơi rung nhẹ.',
-  's': 'Đầu lưỡi cong hướng lên vòm miệng, đẩy luồng hơi ma sát mạnh.',
-  't': 'Đầu lưỡi chạm răng trên tích hơi rồi bật nhanh ra.',
-  'th': 'Đầu lưỡi chạm răng trên rồi bật mạnh hơi ra (luồng hơi mạnh hơn T).',
-  'tr': 'Đầu lưỡi cong chạm nướu răng trên rồi bật mạnh hơi ra.',
-  'v': 'Răng trên chạm nhẹ vào môi dưới, rung dây thanh tạo âm gió.',
-  'x': 'Đầu lưỡi chạm răng dưới, đẩy luồng hơi ma sát nhẹ qua khe răng.',
-};
-
-const SIGN_GUIDE: { [key: string]: string } = {
-  'a': 'Nắm tay lại, ngón cái ép sát dọc theo bên cạnh các ngón khác.',
-  'ă': 'Giống chữ A, nhưng tay chuyển động vẽ một hình vòng cung đi lên.',
-  'â': 'Giống chữ A, nhưng tay chuyển động hướng đi lên phía trên.',
-  'b': 'Mở thẳng 4 ngón tay dựng đứng sát nhau, ngón cái gập vuông góc trong lòng bàn tay.',
-  'c': 'Khum bàn tay lại tạo thành hình chữ C hướng về phía trước.',
-  'd': 'Dựng thẳng đứng ngón trỏ, các ngón còn lại chụm đầu cong chạm ngón cái.',
-  'đ': 'Dựng thẳng ngón trỏ và vẫy lắc nhẹ cổ tay sang hai bên.',
-  'e': 'Gập các ngón tay lại nửa chừng tạo độ khum nhẹ như móng vuốt hướng xuống.',
-  'ê': 'Giống chữ E nhưng tay chuyển động vẽ một vòng cung đi lên.',
-  'g': 'Ngón trỏ và ngón cái duỗi thẳng song song cách nhau 2cm hướng sang bên.',
-  'h': 'Giơ ngón trỏ và ngón giữa duỗi thẳng song song nằm ngang hướng ra ngoài.',
-  'i': 'Giơ ngón út thẳng đứng lên, các ngón khác nắm lại ép sát ngón cái.',
-  'y': 'Giơ ngón út thẳng đứng lên, các ngón khác nắm lại ép sát ngón cái.',
-  'k': 'Ngón trỏ duỗi đứng, ngón giữa duỗi nghiêng 45 độ, ngón cái chạm gốc ngón giữa.',
-  'l': 'Giơ ngón trỏ và ngón cái duỗi thẳng tạo thành góc vuông hình chữ L.',
-  'm': 'Nắm tay lại, giắt 3 ngón (trỏ, giữa, áp út) chọc xuống đè lên ngón cái.',
-  'n': 'Nắm tay lại, giắt 2 ngón (trỏ, giữa) chọc xuống đè lên ngón cái.',
-  'o': 'Khép các ngón tay và ngón cái chạm đầu nhau tạo thành vòng tròn chữ O.',
-  'ô': 'Giống chữ O nhưng chuyển động tay đi lên tạo dấu mũ.',
-  'ơ': 'Giống chữ O nhưng ngón cái hơi dịch ra tạo móc nhỏ.',
-  'p': 'Ngón trỏ duỗi ngang, ngón giữa chỉ xuống đất, ngón cái chạm giữa ngón trỏ.',
-  'q': 'Ngón trỏ và ngón cái khum nhẹ hướng xuống đất như hình móc câu.',
-  'r': 'Bắt chéo ngón giữa đè lên ngón trỏ đứng thẳng, các ngón khác nắm lại.',
-  's': 'Ngón trỏ gập nhẹ đè lên ngón cái đang chĩa ngang tạo hình chữ S.',
-  't': 'Ngón trỏ dựng thẳng, ngón cái gập chạm vào đốt giữa ngón trỏ.',
-  'u': 'Giơ ngón trỏ và ngón giữa đứng thẳng sát nhau, các ngón khác nắm lại.',
-  'ư': 'Giống chữ U nhưng lắc nhẹ cổ tay sang bên.',
-  'v': 'Giơ ngón trỏ và ngón giữa tạo thành hình chữ V đứng.',
-  'x': 'Nắm tay lại, riêng ngón trỏ gập cong như hình móc câu.',
-};
-
 export const SignLanguage: React.FC = () => {
-  const { activeWordParsed, activeStepIndex, tokens, activeTokenId, mode, theme } = useReader();
+  const { activeWordParsed, activeStepIndex, theme } = useReader();
   const isDark = theme === 'dark';
 
-  const activeToken = tokens.find(t => t.id === activeTokenId);
-  const steps = activeToken?.spellingResult?.steps;
-  const currentStep = steps && activeStepIndex !== -1 && activeStepIndex < steps.length 
-    ? steps[activeStepIndex] 
-    : null;
-
-  if (!activeWordParsed || !currentStep) {
-    return null;
-  }
-
-  const activeChar = currentStep.text.toLowerCase();
-  const mouthInstruction = MOUTH_GUIDE[activeChar] || MOUTH_GUIDE[activeChar[0]] || 'Mở miệng phát âm tự nhiên theo âm thanh.';
-  const signInstruction = SIGN_GUIDE[activeChar] || SIGN_GUIDE[activeChar[0]] || '';
-
-  if (currentStep.type === 'final' || mode === 'read') {
-    return null;
-  }
-
-  // Phân loại kiểu khẩu hình miệng vẽ bằng SVG
-  const getMouthType = (char: string): 'wide-open' | 'semi-open' | 'flat-smile' | 'rounded' | 'closed' | 'default' => {
-    const base = char[0];
-    if (['a', 'ă', 'â'].includes(base)) return 'wide-open';
-    if (['o', 'ơ'].includes(base)) return 'semi-open';
-    if (['e', 'ê', 'i', 'y', 'd', 'gi'].includes(base)) return 'flat-smile';
-    if (['u', 'ư', 'ô', 'qu'].includes(base)) return 'rounded';
-    if (['b', 'm', 'p', 'v', 'ph'].includes(base)) return 'closed';
+  const getActiveMouthShape = (): 'default' | 'wide-open' | 'semi-open' | 'flat-smile' | 'rounded' | 'closed' => {
+    if (!activeWordParsed) return 'default';
+    
+    // Nếu đang đánh vần đến bước cụ thể
+    if (activeStepIndex !== -1 && activeWordParsed.original) {
+      const token = activeWordParsed.original.toLowerCase();
+      // Lấy ký tự/âm tiết tại bước hiện tại
+      // Vd: 'oang' -> hình dáng tương ứng
+      if (token.includes('o') || token.includes('u')) return 'rounded';
+      if (token.includes('a') || token.includes('ă') || token.includes('â')) return 'wide-open';
+      if (token.includes('e') || token.includes('ê') || token.includes('i') || token.includes('y')) return 'flat-smile';
+    }
+    
+    // Mặc định dựa trên âm tiết đầy đủ
+    const rhyme = activeWordParsed.rhyme.toLowerCase();
+    if (rhyme.includes('o') || rhyme.includes('u') || rhyme.includes('ô') || rhyme.includes('ơ') || rhyme.includes('uô')) {
+      return 'rounded';
+    }
+    if (rhyme.includes('a') || rhyme.includes('ă') || rhyme.includes('â') || rhyme.includes('am') || rhyme.includes('an')) {
+      return 'wide-open';
+    }
+    if (rhyme.includes('i') || rhyme.includes('y') || rhyme.includes('e') || rhyme.includes('ê') || rhyme.includes('iê')) {
+      return 'flat-smile';
+    }
+    
     return 'default';
   };
 
-  // Phân loại kiểu thủ ngữ vẽ bằng SVG
-  const getHandSignType = (char: string): 'fist' | 'flat' | 'c-shape' | 'point' | 'pinky' | 'circle' | 'v-sign' | 'default' => {
-    const base = char[0];
-    if (['a', 'ă', 'â', 's', 'm', 'n'].includes(base)) return 'fist';
-    if (['b', 'p', 'ph'].includes(base)) return 'flat';
-    if (['c', 'ch', 'kh'].includes(base)) return 'c-shape';
-    if (['d', 'đ', 't', 'th', 'tr', 'x'].includes(base)) return 'point';
-    if (['i', 'y'].includes(base)) return 'pinky';
-    if (['o', 'ô', 'ơ', 'u', 'ư'].includes(base)) return 'circle';
-    if (['v'].includes(base)) return 'v-sign';
-    return 'default';
+  const getActiveHandSign = (): 'fist' | 'flat' | 'c-shape' | 'point' | 'pinky' | 'circle' | 'v-sign' | 'default' => {
+    if (!activeWordParsed) return 'default';
+    
+    // Lấy chữ cái bắt đầu hoặc âm đầu để hiển thị thủ ngữ
+    const firstLetter = activeWordParsed.original.charAt(0).toLowerCase();
+    
+    const signMap: { [letter: string]: 'fist' | 'flat' | 'c-shape' | 'point' | 'pinky' | 'circle' | 'v-sign' | 'default' } = {
+      'a': 'fist', 'ă': 'fist', 'â': 'fist',
+      'b': 'flat',
+      'c': 'c-shape', 'ch': 'c-shape',
+      'd': 'point', 'đ': 'point',
+      'i': 'pinky', 'y': 'pinky',
+      'o': 'circle', 'ô': 'circle', 'ơ': 'circle',
+      'v': 'v-sign',
+    };
+
+    return signMap[firstLetter] || 'default';
   };
 
-  const mouthType = getMouthType(activeChar);
-  const handSignType = getHandSignType(activeChar);
+  const mouthType = getActiveMouthShape();
+  const handType = getActiveHandSign();
+
+  const getMouthLabel = (type: string) => {
+    switch (type) {
+      case 'rounded': return 'Chu môi tròn';
+      case 'wide-open': return 'Mở rộng cằm';
+      case 'flat-smile': return 'Cười dẹt môi';
+      case 'closed': return 'Khép miệng';
+      default: return 'Khẩu hình tự nhiên';
+    }
+  };
+
+  const getHandLabel = (type: string) => {
+    switch (type) {
+      case 'fist': return 'Nắm đấm (Chữ A)';
+      case 'flat': return 'Bàn tay dựng (Chữ B)';
+      case 'c-shape': return 'Chữ C cong';
+      case 'point': return 'Ngón trỏ dựng (Chữ D)';
+      case 'pinky': return 'Ngón út dựng (Chữ I)';
+      case 'circle': return 'Vòng tròn chữ O';
+      case 'v-sign': return 'Ngón tay V (Chữ V)';
+      default: return 'Thủ ngữ tương ứng';
+    }
+  };
 
   return (
     <View style={[
-      styles.container, 
-      { 
-        backgroundColor: isDark ? '#16161a' : '#F8F9FA',
-        borderColor: isDark ? '#2D3748' : COLORS.border
+      styles.container,
+      {
+        backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
+        borderColor: isDark ? COLORS.borderDark : COLORS.border,
+        borderBottomColor: isDark ? '#162228' : '#D5D5D5',
       }
     ]}>
-      <Text style={[styles.title, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Trợ Giúp Trực Quan (Thiện Nguyện)</Text>
-      
+      <Text style={[styles.title, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+        👋 Khẩu Hình & Thủ Ngữ
+      </Text>
+
       <View style={styles.contentRow}>
-        {/* Hộp khẩu hình miệng */}
-        <View style={[
-          styles.guideCard,
-          {
-            backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
-            borderColor: isDark ? '#2D3748' : '#E9ECEF'
-          }
-        ]}>
-          <View style={styles.badgeContainer}>
-            <Text style={[styles.badge, { backgroundColor: isDark ? '#2a441e' : '#E2F0D9', color: isDark ? '#a3e635' : '#385723' }]}>KHẨU HÌNH MIỆNG</Text>
+        {/* Khẩu hình miệng */}
+        <View style={[styles.panelCard, { backgroundColor: isDark ? COLORS.bgDark : '#F7F9FA', borderColor: isDark ? COLORS.borderDark : COLORS.border }]}>
+          <Text style={[styles.cardHeader, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            👄 Khẩu hình miệng
+          </Text>
+          <View style={styles.svgContainer}>
+            <MouthSvg type={mouthType} isDark={isDark} />
           </View>
-          
-          <MouthSvg type={mouthType} isDark={isDark} />
-          
-          <Text style={[styles.instructionText, { color: isDark ? COLORS.textDark : COLORS.text }]}>{mouthInstruction}</Text>
+          <Text style={[styles.cardFooter, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}>
+            {getMouthLabel(mouthType)}
+          </Text>
         </View>
 
-        {/* Hộp thủ ngữ ký hiệu chữ cái */}
-        {signInstruction ? (
-          <View style={[
-            styles.guideCard,
-            {
-              backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
-              borderColor: isDark ? '#2D3748' : '#E9ECEF'
-            }
-          ]}>
-            <View style={styles.badgeContainer}>
-              <Text style={[styles.badge, { backgroundColor: isDark ? '#5c2d1b' : '#FCE4D6', color: isDark ? '#fb923c' : '#C65911' }]}>KÝ HIỆU THỦ NGỮ VSL</Text>
-            </View>
-            
-            <HandSignSvg type={handSignType} isDark={isDark} />
-            
-            <Text style={[styles.instructionText, { color: isDark ? COLORS.textDark : COLORS.text }]}>{signInstruction}</Text>
+        {/* Thủ ngữ */}
+        <View style={[styles.panelCard, { backgroundColor: isDark ? COLORS.bgDark : '#F7F9FA', borderColor: isDark ? COLORS.borderDark : COLORS.border }]}>
+          <Text style={[styles.cardHeader, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            🖐️ Thủ ngữ VSL
+          </Text>
+          <View style={styles.svgContainer}>
+            <HandSignSvg type={handType} isDark={isDark} />
           </View>
-        ) : null}
+          <Text style={[styles.cardFooter, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}>
+            {getHandLabel(handType)}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -179,45 +129,50 @@ export const SignLanguage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     borderRadius: 24,
-    padding: 20,
-    borderWidth: 1.5,
-    marginVertical: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderBottomWidth: 5,
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    elevation: 2,
   },
   title: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '800',
     marginBottom: 12,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   contentRow: {
     flexDirection: 'row',
     gap: 12,
   },
-  guideCard: {
+  panelCard: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 2,
     padding: 12,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 180,
   },
-  badgeContainer: {
+  cardHeader: {
+    fontSize: 12,
+    fontWeight: 'bold',
     marginBottom: 8,
   },
-  badge: {
+  svgContainer: {
+    width: 90,
+    height: 90,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 6,
+  },
+  cardFooter: {
     fontSize: 10,
     fontWeight: 'bold',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  instructionText: {
-    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 18,
-    marginTop: 6,
+    marginTop: 8,
   },
 });

@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TextInput, 
+  TouchableOpacity, 
+  ScrollView, 
+  KeyboardAvoidingView, 
+  Platform,
+  Alert
+} from 'react-native';
 import { useReader } from '../context/ReaderContext';
 import { loadCustomPassages, saveCustomPassages, loadSessionLogs, clearSessionLogs, SessionLog } from '../services/storage';
 import { COLORS } from '../theme/colors';
 
-const SAMPLE_TEXTS = [
-  {
-    title: '🐱 Con mèo nhà em',
-    text: 'Nhà em có một con mèo rất ngoan. Bộ lông của nó mềm mại và mượt mà. Đôi mắt nó tròn xoe, lấp lánh như hai hòn bi ve trong đêm tối.'
-  },
-  {
-    title: '🏫 Trường học lớp 1',
-    text: 'Trường học của bé có hàng cây xanh mát. Thầy cô giáo yêu thương và chăm sóc bé mỗi ngày. Bé thích nhất giờ học đọc cùng bạn bè.'
-  },
-  {
-    title: '👵 Kể về Bà',
-    text: 'Bà ngoại của em rất hiền từ. Mái tóc bà đã bạc trắng. Mỗi tối, bà thường kể những câu chuyện cổ tích hay cho em nghe trước khi ngủ.'
-  }
+const SAMPLE_STORIES = [
+  { title: '🐱 Con mèo nhà em', text: 'Con mèo nhà em lông màu trắng muốt. Nó rất ngoan và thích bắt chuột.' },
+  { title: '☀️ Buổi sáng quê em', text: 'Buổi sáng quê em gió mát rượi. Ông mặt trời đỏ rực nhô lên sau lũy tre làng.' },
+  { title: '🐠 Chú cá vàng lấp lánh', text: 'Chú cá vàng bơi lội tung tăng trong bể nước. Vảy cá vàng óng lấp lánh như dát vàng.' }
 ];
 
 interface HomeScreenProps {
@@ -25,60 +26,56 @@ interface HomeScreenProps {
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) => {
   const { setText, theme, toggleTheme } = useReader();
-  const [inputVal, setInputVal] = useState('');
+  const [inputText, setInputText] = useState('');
   const [customPassages, setCustomPassages] = useState<string[]>([]);
   const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  
+  // Trạng thái nhấn nút 3D (Duolingo style)
+  const [isPlayPressed, setIsPlayPressed] = useState(false);
+  const [isThemePressed, setIsThemePressed] = useState(false);
+  const [isClearPressed, setIsClearPressed] = useState(false);
+
   const isDark = theme === 'dark';
 
-  // Nạp bài tập đọc tự soạn và lịch sử học tập
   useEffect(() => {
-    const initData = async () => {
-      try {
-        const passages = await loadCustomPassages();
-        setCustomPassages(passages);
-        
-        const logs = await loadSessionLogs();
-        setSessionLogs(logs);
-      } catch (err) {
-        console.warn('Lỗi nạp dữ liệu offline:', err);
-      }
-    };
-    initData();
+    loadCustomPassages().then(setCustomPassages);
+    loadSessionLogs().then(setSessionLogs);
   }, []);
 
-  const handleStartReading = async (customText?: string) => {
-    const textToRead = customText || inputVal;
-    if (!textToRead.trim()) {
-      Alert.alert('Thông báo', 'Vui lòng nhập hoặc chọn một đoạn văn trước khi bắt đầu!');
+  const handleStartPlay = (textToPlay: string) => {
+    if (!textToPlay.trim()) {
+      Alert.alert('Bố mẹ ơi!', 'Hãy nhập một đoạn văn hoặc chọn bài đọc mẫu phía dưới cho bé nhé!');
       return;
     }
 
-    if (!customText && !SAMPLE_TEXTS.some(s => s.text === textToRead)) {
-      if (!customPassages.includes(textToRead)) {
-        const updated = [textToRead, ...customPassages];
-        setCustomPassages(updated);
-        await saveCustomPassages(updated);
-      }
+    setText(textToPlay);
+    
+    // Nếu là đoạn văn tự soạn chưa có trong danh sách, lưu lại
+    const isSample = SAMPLE_STORIES.some(s => s.text === textToPlay);
+    const isAlreadySaved = customPassages.includes(textToPlay);
+    if (!isSample && !isAlreadySaved) {
+      const updated = [textToPlay, ...customPassages];
+      setCustomPassages(updated);
+      saveCustomPassages(updated);
     }
 
-    setText(textToRead);
     onNavigateToReader();
   };
 
   const handleDeletePassage = (indexToDelete: number) => {
     Alert.alert(
-      'Xác nhận xóa',
-      'Bạn có chắc muốn xóa bài tập đọc tự soạn này không?',
+      'Xóa bài đọc',
+      'Bố mẹ có chắc chắn muốn xóa bài tự soạn này không?',
       [
-        { text: 'Hủy bỏ', style: 'cancel' },
-        {
-          text: 'Xóa bài',
+        { text: 'Hủy', style: 'cancel' },
+        { 
+          text: 'Xóa', 
           style: 'destructive',
-          onPress: async () => {
+          onPress: () => {
             const updated = customPassages.filter((_, idx) => idx !== indexToDelete);
             setCustomPassages(updated);
-            await saveCustomPassages(updated);
+            saveCustomPassages(updated);
           }
         }
       ]
@@ -87,196 +84,227 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
 
   const handleClearHistory = () => {
     Alert.alert(
-      'Xác nhận xóa',
-      'Bạn có chắc chắn muốn xóa toàn bộ lịch sử học tập của bé không?',
+      'Xóa lịch sử',
+      'Bố mẹ có chắc chắn muốn xóa toàn bộ học bạ của bé không? Hành động này không thể hoàn tác.',
       [
-        { text: 'Hủy bỏ', style: 'cancel' },
+        { text: 'Hủy', style: 'cancel' },
         {
-          text: 'Xóa lịch sử',
+          text: 'Xóa sạch',
           style: 'destructive',
           onPress: async () => {
             await clearSessionLogs();
             setSessionLogs([]);
-            Alert.alert('Thành công', 'Đã xóa sạch lịch sử học tập.');
+            Alert.alert('Thành công', 'Đã xóa toàn bộ lịch sử học tập.');
           }
         }
       ]
     );
   };
 
-  // Tính toán các số liệu học bạ của bé
+  // Tính toán số liệu học bạ của bé
   const totalSessions = sessionLogs.length;
   const averageScore = totalSessions > 0 
     ? Math.round(sessionLogs.reduce((acc, log) => acc + log.score, 0) / totalSessions)
     : 0;
 
-  // Lấy ra danh sách các từ bé hay đọc sai nhất (Top 3)
-  const getTopMissedWords = () => {
-    const wordCounts: { [word: string]: number } = {};
-    sessionLogs.forEach((log) => {
-      log.missedWords.forEach((word) => {
-        const clean = word.toLowerCase().replace(/[.,!?;:"()“”]/g, '').trim();
-        if (clean) {
-          wordCounts[clean] = (wordCounts[clean] || 0) + 1;
-        }
-      });
+  // Lấy các từ hay đọc sai nhất (top 3)
+  const wordCounts: { [word: string]: number } = {};
+  sessionLogs.forEach((log) => {
+    log.missedWords.forEach((word) => {
+      const clean = word.toLowerCase().replace(/[.,!?;:"()“”]/g, '').trim();
+      if (clean) {
+        wordCounts[clean] = (wordCounts[clean] || 0) + 1;
+      }
     });
+  });
 
-    return Object.entries(wordCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([word]) => word);
-  };
+  const topMissedWords = Object.entries(wordCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([word]) => word);
 
-  const topMissed = getTopMissedWords();
-
-  const handleOcrMock = () => {
-    Alert.alert(
-      'Tính năng Premium AI',
-      'Bạn có muốn chụp ảnh và nhận diện chữ tự động từ sách giáo khoa lớp 1 của bé không?',
-      [
-        { text: 'Hủy bỏ', style: 'cancel' },
-        { 
-          text: 'Quét mẫu sách', 
-          onPress: () => {
-            const ocrMockText = 'Cô giáo em hiền hậu và vui tính. Giọng cô đọc bài ấm áp vô cùng. Cả lớp im lặng lắng nghe cô giảng bài.';
-            setInputVal(ocrMockText);
-            Alert.alert('Thành công', 'Đã nhận diện chữ thành công từ ảnh chụp trang sách!');
-          } 
-        }
-      ]
-    );
-  };
-
-  const formatDate = (isoString: string) => {
-    try {
-      const d = new Date(isoString);
-      const pad = (n: number) => n.toString().padStart(2, '0');
-      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    } catch {
-      return '';
-    }
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return COLORS.primary;
+    if (score >= 60) return COLORS.secondary;
+    return COLORS.error;
   };
 
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: isDark ? COLORS.darkBackground : COLORS.background }]}
+      style={[styles.container, { backgroundColor: isDark ? COLORS.bgDark : COLORS.bg }]}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Nút bật/tắt theme nổi trên góc */}
-        <View style={styles.themeToggleContainer}>
-          <TouchableOpacity 
-            style={[styles.themeBtn, { backgroundColor: isDark ? '#2D3748' : '#E2E8F0' }]} 
-            onPress={toggleTheme}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.themeBtnText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
-              {isDark ? '☀️ Sáng' : '🌙 Tối'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Tiêu đề ứng dụng */}
-        <View style={styles.header}>
-          <Text style={styles.logo}>📚</Text>
-          <Text style={[styles.appName, { color: isDark ? COLORS.textDark : COLORS.text }]}>Gia Sư Tập Đọc</Text>
-          <Text style={[styles.subTitle, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>
-            Dạy bé lớp 1 đánh vần & đọc chữ trơn chuẩn sư phạm
+      {/* Header Duolingo Style */}
+      <View style={[styles.header, { borderBottomColor: isDark ? COLORS.borderDark : COLORS.border }]}>
+        <View>
+          <Text style={styles.headerSubtitle}>GIA SƯ TẬP ĐỌC</Text>
+          <Text style={[styles.headerTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            Vui Học Tiếng Việt 🦉
           </Text>
         </View>
 
-        {/* 📊 Bảng Báo Cáo Học Tập (Parent Dashboard) */}
+        <TouchableOpacity 
+          activeOpacity={1}
+          onPressIn={() => setIsThemePressed(true)}
+          onPressOut={() => setIsThemePressed(false)}
+          onPress={toggleTheme}
+          style={[
+            styles.themeBtn,
+            {
+              backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+              borderColor: isDark ? COLORS.borderDark : COLORS.border,
+              borderBottomColor: isDark ? '#162228' : '#D5D5D5',
+              transform: [{ translateY: isThemePressed ? 2 : 0 }],
+              borderBottomWidth: isThemePressed ? 1 : 4,
+            }
+          ]}
+        >
+          <Text style={styles.themeBtnText}>{isDark ? '☀️' : '🌙'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* Hộp soạn bài đọc */}
         <View style={[
-          styles.dashboardCard,
-          {
-            backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
-            borderColor: isDark ? '#2D3748' : COLORS.border
+          styles.card,
+          { 
+            backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+            borderColor: isDark ? COLORS.borderDark : COLORS.border
           }
         ]}>
-          <Text style={[styles.dashboardTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>📊 Học Bạ Của Bé</Text>
+          <Text style={[styles.cardTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            ✍️ Bố mẹ soạn bài đọc mới
+          </Text>
+          
+          <TextInput
+            style={[
+              styles.input,
+              { 
+                borderColor: isDark ? COLORS.borderDark : COLORS.border,
+                backgroundColor: isDark ? COLORS.bgDark : COLORS.bgSoft,
+                color: isDark ? COLORS.textDark : COLORS.text
+              }
+            ]}
+            placeholder="Nhập câu hoặc đoạn văn tại đây để bé tập đọc..."
+            placeholderTextColor={isDark ? COLORS.mutedDark : COLORS.muted}
+            multiline
+            numberOfLines={4}
+            value={inputText}
+            onChangeText={setInputText}
+          />
+
+          <TouchableOpacity
+            activeOpacity={1}
+            onPressIn={() => setIsPlayPressed(true)}
+            onPressOut={() => setIsPlayPressed(false)}
+            onPress={() => handleStartPlay(inputText)}
+            style={[
+              styles.startBtn,
+              {
+                backgroundColor: COLORS.primary,
+                borderBottomColor: COLORS.primaryShadow,
+                transform: [{ translateY: isPlayPressed ? 3 : 0 }],
+                borderBottomWidth: isPlayPressed ? 1 : 4,
+              }
+            ]}
+          >
+            <Text style={styles.startBtnText}>BẮT ĐẦU HỌC ĐỌC 🚀</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Học bạ Duolingo (Thành tích) */}
+        <View style={[
+          styles.card,
+          { 
+            backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+            borderColor: isDark ? COLORS.borderDark : COLORS.border
+          }
+        ]}>
+          <Text style={[styles.cardTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            🏆 Thành tích của bé
+          </Text>
           
           <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{totalSessions}</Text>
-              <Text style={[styles.statLabel, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Lượt học</Text>
+            <View style={[styles.statBox, { backgroundColor: isDark ? COLORS.bgDark : '#F7F9FA' }]}>
+              <Text style={styles.statVal}>{totalSessions}</Text>
+              <Text style={styles.statLbl}>Bài đã đọc</Text>
             </View>
-            <View style={[styles.statBox, styles.statBorder, { borderColor: isDark ? '#2D3748' : '#E9ECEF' }]}>
-              <Text style={[
-                styles.statNumber, 
-                { color: averageScore >= 80 ? '#2E7D32' : averageScore >= 50 ? '#EF6C00' : '#C62828' }
-              ]}>
-                {averageScore}%
-              </Text>
-              <Text style={[styles.statLabel, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Đọc đúng</Text>
-            </View>
-            <View style={styles.statBox}>
-              <Text style={[styles.statNumber, { fontSize: topMissed.length > 0 ? 14 : 20 }]}>
-                {topMissed.length > 0 ? topMissed.join(', ') : '-'}
-              </Text>
-              <Text style={[styles.statLabel, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Cần luyện thêm</Text>
+            <View style={[styles.statBox, { backgroundColor: isDark ? COLORS.bgDark : '#F7F9FA' }]}>
+              <Text style={[styles.statVal, { color: COLORS.secondary }]}>{averageScore}%</Text>
+              <Text style={styles.statLbl}>Đúng trung bình</Text>
             </View>
           </View>
 
+          {topMissedWords.length > 0 && (
+            <View style={[styles.remedialBox, { borderColor: isDark ? COLORS.borderDark : COLORS.border }]}>
+              <Text style={[styles.remedialTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+                ⚠️ Từ bé hay phát âm sai:
+              </Text>
+              <View style={styles.badgeContainer}>
+                {topMissedWords.map((word, idx) => (
+                  <View key={idx} style={styles.missedBadge}>
+                    <Text style={styles.missedBadgeText}>{word}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
           {totalSessions > 0 && (
-            <View style={styles.historyContainer}>
-              <TouchableOpacity
-                style={styles.historyToggleBtn}
+            <View style={styles.historySection}>
+              <TouchableOpacity 
+                style={styles.toggleHistoryBtn} 
                 onPress={() => setShowHistory(!showHistory)}
-                activeOpacity={0.7}
               >
-                <Text style={styles.historyToggleText}>
+                <Text style={styles.toggleHistoryText}>
                   {showHistory ? '🔼 Ẩn lịch sử chi tiết' : '🔽 Xem lịch sử chi tiết'}
                 </Text>
               </TouchableOpacity>
 
               {showHistory && (
                 <View style={styles.historyList}>
-                  {sessionLogs.map((log) => {
-                    const isPerfect = log.score === 100;
-                    const isOk = log.score >= 70;
-                    return (
-                      <View 
-                        key={log.id} 
-                        style={[
-                          styles.historyItem, 
-                          { borderBottomColor: isDark ? '#2D3748' : '#F1F3F5' }
-                        ]}
-                      >
-                        <View style={styles.historyHeader}>
-                          <Text style={[styles.historyDate, { color: isDark ? '#718096' : COLORS.muted }]}>
-                            {formatDate(log.date)}
-                          </Text>
-                          <View style={[
-                            styles.scoreBadge,
-                            { backgroundColor: isPerfect ? '#E2F0D9' : isOk ? '#FFF2CC' : '#FCE4D6' }
-                          ]}>
-                            <Text style={[
-                              styles.scoreBadgeText,
-                              { color: isPerfect ? '#385723' : isOk ? '#D5A600' : '#C65911' }
-                            ]}>
-                              {log.score}%
-                            </Text>
-                          </View>
-                        </View>
-                        <Text style={[styles.historyText, { color: isDark ? COLORS.textDark : COLORS.text }]} numberOfLines={1}>
-                          {log.text}
+                  {sessionLogs.map((log) => (
+                    <View 
+                      key={log.id} 
+                      style={[
+                        styles.historyItem,
+                        { borderBottomColor: isDark ? COLORS.borderDark : '#F1F3F5' }
+                      ]}
+                    >
+                      <View style={styles.historyHeader}>
+                        <Text style={[styles.historyDate, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}>
+                          {new Date(log.date).toLocaleDateString('vi-VN')} {new Date(log.date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                         </Text>
-                        {log.missedWords.length > 0 && (
-                          <Text style={styles.historyMissedText} numberOfLines={1}>
-                            Sai: {log.missedWords.join(', ')}
-                          </Text>
-                        )}
+                        <Text style={[styles.historyScore, { color: getScoreColor(log.score) }]}>
+                          {log.score}% Đúng
+                        </Text>
                       </View>
-                    );
-                  })}
-                  
+                      <Text 
+                        numberOfLines={1} 
+                        style={[styles.historyTextPreview, { color: isDark ? COLORS.textDark : COLORS.text }]}
+                      >
+                        {log.text}
+                      </Text>
+                    </View>
+                  ))}
+
                   <TouchableOpacity
-                    style={styles.clearHistoryBtn}
+                    activeOpacity={1}
+                    onPressIn={() => setIsClearPressed(true)}
+                    onPressOut={() => setIsClearPressed(false)}
                     onPress={handleClearHistory}
-                    activeOpacity={0.7}
+                    style={[
+                      styles.clearHistoryBtn,
+                      {
+                        backgroundColor: COLORS.error,
+                        borderBottomColor: COLORS.errorShadow,
+                        transform: [{ translateY: isClearPressed ? 2 : 0 }],
+                        borderBottomWidth: isClearPressed ? 1 : 4,
+                      }
+                    ]}
                   >
-                    <Text style={styles.clearHistoryText}>🗑️ Xóa toàn bộ lịch sử</Text>
+                    <Text style={styles.clearHistoryTextBtn}>🗑️ XÓA TOÀN BỘ LỊCH SỬ</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -284,120 +312,77 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
           )}
         </View>
 
-        {/* Khung nhập văn bản */}
-        <View style={[
-          styles.inputCard, 
-          { 
-            backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
-            borderColor: isDark ? '#2D3748' : COLORS.border
-          }
-        ]}>
-          <Text style={[styles.cardLabel, { color: isDark ? COLORS.textDark : COLORS.text }]}>Nhập bài tập đọc của bé:</Text>
-          <TextInput
+        {/* Bài đọc mẫu */}
+        <Text style={[styles.sectionTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+          📚 Truyện mẫu cho bé
+        </Text>
+        {SAMPLE_STORIES.map((story, index) => (
+          <TouchableOpacity
+            key={index}
+            activeOpacity={0.9}
             style={[
-              styles.textArea,
-              {
-                backgroundColor: isDark ? '#16161a' : '#F8F9FA',
-                borderColor: isDark ? '#2D3748' : COLORS.border,
-                color: isDark ? COLORS.textDark : COLORS.text,
+              styles.storyCard,
+              { 
+                backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+                borderColor: isDark ? COLORS.borderDark : COLORS.border
               }
             ]}
-            multiline
-            numberOfLines={5}
-            placeholder="Phụ huynh hãy dán hoặc tự gõ đoạn văn cô giáo giao về nhà vào đây để dạy bé đọc..."
-            value={inputVal}
-            onChangeText={setInputVal}
-            textAlignVertical="top"
-            placeholderTextColor={isDark ? '#718096' : COLORS.muted}
-          />
-          
-          <View style={styles.actionButtons}>
-            <TouchableOpacity 
-              style={[
-                styles.ocrBtn,
-                {
-                  backgroundColor: isDark ? '#2D3748' : '#F1F3F5',
-                  borderColor: isDark ? '#4A5568' : '#CED4DA',
-                }
-              ]}
-              onPress={handleOcrMock}
-              activeOpacity={0.7}
+            onPress={() => handleStartPlay(story.text)}
+          >
+            <Text style={[styles.storyTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+              {story.title}
+            </Text>
+            <Text 
+              numberOfLines={2} 
+              style={[styles.storySnippet, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}
             >
-              <Text style={[styles.ocrBtnText, { color: isDark ? COLORS.textDark : COLORS.text }]}>📸 Quét SGK (OCR)</Text>
-            </TouchableOpacity>
+              {story.text}
+            </Text>
+          </TouchableOpacity>
+        ))}
 
-            <TouchableOpacity 
-              style={styles.startBtn}
-              onPress={() => handleStartReading()}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.startBtnText}>Bắt đầu học đọc 🚀</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Danh sách bài tập đọc tự soạn */}
+        {/* Danh sách bài tự soạn */}
         {customPassages.length > 0 && (
-          <View style={styles.samplesSection}>
-            <Text style={[styles.sectionTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>Bài tự soạn của ba mẹ:</Text>
-            {customPassages.map((passage, idx) => (
+          <>
+            <Text style={[styles.sectionTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+              📝 Bài tự soạn của ba mẹ
+            </Text>
+            {customPassages.map((passage, index) => (
               <View 
-                key={idx}
+                key={index}
                 style={[
-                  styles.passageContainer,
-                  {
-                    backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
-                    borderColor: isDark ? '#2D3748' : COLORS.border
+                  styles.customPassageCard,
+                  { 
+                    backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+                    borderColor: isDark ? COLORS.borderDark : COLORS.border
                   }
                 ]}
               >
-                <TouchableOpacity
-                  style={styles.passageTextBtn}
-                  onPress={() => handleStartReading(passage)}
-                  activeOpacity={0.7}
+                <TouchableOpacity 
+                  style={styles.customPassageContent} 
+                  onPress={() => handleStartPlay(passage)}
                 >
-                  <Text style={[styles.passageTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
-                    📝 Bài tự soạn {customPassages.length - idx}
+                  <Text style={[styles.customPassageTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+                    Bài tự soạn {customPassages.length - index}
                   </Text>
-                  <Text style={[styles.sampleSnippet, { color: isDark ? '#A0AEC0' : COLORS.muted }]} numberOfLines={1}>
+                  <Text 
+                    numberOfLines={1} 
+                    style={[styles.customPassageSnippet, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}
+                  >
                     {passage}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => handleDeletePassage(idx)}
-                  activeOpacity={0.7}
+                
+                <TouchableOpacity 
+                  style={styles.deleteBtn} 
+                  onPress={() => handleDeletePassage(index)}
                 >
                   <Text style={styles.deleteBtnText}>🗑️</Text>
                 </TouchableOpacity>
               </View>
             ))}
-          </View>
+          </>
         )}
-
-        {/* Đoạn văn mẫu gợi ý */}
-        <View style={styles.samplesSection}>
-          <Text style={[styles.sectionTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>Chọn nhanh bài mẫu:</Text>
-          {SAMPLE_TEXTS.map((sample, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={[
-                styles.sampleItem,
-                {
-                  backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
-                  borderColor: isDark ? '#2D3748' : COLORS.border
-                }
-              ]}
-              onPress={() => handleStartReading(sample.text)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.sampleTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>{sample.title}</Text>
-              <Text style={[styles.sampleSnippet, { color: isDark ? '#A0AEC0' : COLORS.muted }]} numberOfLines={1}>
-                {sample.text}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -407,266 +392,230 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 40 : 20,
-    paddingBottom: 40,
-  },
-  themeToggleContainer: {
-    alignItems: 'flex-end',
-    width: '100%',
-    marginBottom: 8,
-  },
-  themeBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  themeBtnText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
   header: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  logo: {
-    fontSize: 54,
-    marginBottom: 8,
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  subTitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 20,
-    paddingHorizontal: 20,
-  },
-  inputCard: {
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    marginBottom: 24,
-  },
-  cardLabel: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  textArea: {
-    borderRadius: 16,
-    padding: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    minHeight: 120,
-    marginBottom: 16,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  ocrBtn: {
-    flex: 1,
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  ocrBtnText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  startBtn: {
-    flex: 1.5,
-    backgroundColor: COLORS.primary,
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  startBtnText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  samplesSection: {
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  sampleItem: {
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1.5,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  sampleTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  sampleSnippet: {
-    fontSize: 13,
-  },
-  passageContainer: {
-    flexDirection: 'row',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    marginBottom: 10,
-    alignItems: 'center',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  passageTextBtn: {
-    flex: 1,
-    padding: 16,
-  },
-  passageTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  deleteBtn: {
-    padding: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(0,0,0,0.05)',
-  },
-  deleteBtnText: {
-    fontSize: 18,
-  },
-  
-  // Dashboard Card Specific Styling
-  dashboardCard: {
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    marginBottom: 24,
-  },
-  dashboardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    paddingBottom: 16,
+    borderBottomWidth: 2,
+  },
+  headerSubtitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: COLORS.muted,
+    letterSpacing: 1.2,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  themeBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  themeBtnText: {
+    fontSize: 20,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  card: {
+    borderRadius: 24,
+    borderWidth: 2,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    elevation: 1,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 12,
+  },
+  input: {
+    borderRadius: 16,
+    borderWidth: 2,
+    padding: 14,
+    height: 100,
+    fontSize: 15,
+    textAlignVertical: 'top',
+    marginBottom: 16,
+  },
+  startBtn: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  startBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 14,
   },
   statBox: {
     flex: 1,
+    borderRadius: 16,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    borderWidth: 2,
+    borderColor: '#E5E5E5',
   },
-  statBorder: {
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-  },
-  statNumber: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  historyContainer: {
-    marginTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
-    paddingTop: 12,
-  },
-  historyToggleBtn: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  historyToggleText: {
-    fontSize: 13,
-    fontWeight: 'bold',
+  statVal: {
+    fontSize: 24,
+    fontWeight: '900',
     color: COLORS.primary,
   },
+  statLbl: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: COLORS.muted,
+    marginTop: 2,
+  },
+  remedialBox: {
+    borderRadius: 16,
+    borderWidth: 2,
+    padding: 12,
+    marginTop: 4,
+  },
+  remedialTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  missedBadge: {
+    backgroundColor: COLORS.incorrectBg,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#FFA4A4',
+  },
+  missedBadgeText: {
+    color: COLORS.error,
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  historySection: {
+    marginTop: 12,
+  },
+  toggleHistoryBtn: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  toggleHistoryText: {
+    color: COLORS.secondary,
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
   historyList: {
-    marginTop: 10,
-    maxHeight: 250,
+    marginTop: 12,
   },
   historyItem: {
+    borderBottomWidth: 1.5,
     paddingVertical: 10,
-    borderBottomWidth: 1,
   },
   historyHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 4,
   },
   historyDate: {
     fontSize: 11,
+    fontWeight: 'bold',
+  },
+  historyScore: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  historyTextPreview: {
+    fontSize: 14,
     fontWeight: '600',
   },
-  scoreBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  scoreBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  historyText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  historyMissedText: {
-    fontSize: 11,
-    color: '#C62828',
-    marginTop: 2,
-    fontStyle: 'italic',
-  },
   clearHistoryBtn: {
+    borderRadius: 16,
     paddingVertical: 12,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
+    marginTop: 16,
   },
-  clearHistoryText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#C62828',
+  clearHistoryTextBtn: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  storyCard: {
+    borderRadius: 20,
+    borderWidth: 2,
+    padding: 16,
+    marginBottom: 12,
+  },
+  storyTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  storySnippet: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  customPassageCard: {
+    flexDirection: 'row',
+    borderRadius: 20,
+    borderWidth: 2,
+    padding: 16,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  customPassageContent: {
+    flex: 1,
+  },
+  customPassageTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  customPassageSnippet: {
+    fontSize: 13,
+  },
+  deleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#FFE3E3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  deleteBtnText: {
+    fontSize: 16,
   },
 });

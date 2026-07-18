@@ -3,15 +3,23 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useReader } from '../context/ReaderContext';
 import { COLORS } from '../theme/colors';
 
+// Định nghĩa màu âm vị học cho ký tự
+const PHONIC_COLORS = {
+  onset: '#FF4B4B',  // Đỏ (Onset)
+  rhyme: '#58CC02',  // Xanh lá (Rhyme)
+  tone: '#1CB0F6',   // Xanh dương (Tone)
+};
+
 export const KaraokeText: React.FC = () => {
   const { tokens, activeTokenId, activeStepIndex, mode, wordAssessment, theme } = useReader();
   const isDark = theme === 'dark';
 
-  // Hàm hiển thị chữ cái đang được đánh vần trực tiếp trên từ đó
+  // Hàm hiển thị chữ cái đang được đánh vần hoặc đọc dưới dạng các thẻ từ 3D Duolingo
   const renderWordToken = (token: any) => {
     const isActive = token.id === activeTokenId;
     const hasAssessment = wordAssessment && wordAssessment[token.id];
     
+    // TRƯỜNG HỢP 1: Từ bình thường không được kích hoạt phát âm
     if (!isActive) {
       if (hasAssessment) {
         const isCorrect = wordAssessment[token.id] === 'correct';
@@ -21,35 +29,59 @@ export const KaraokeText: React.FC = () => {
             style={[
               styles.assessedWordContainer, 
               isCorrect ? styles.correctWord : styles.incorrectWord,
-              { borderColor: isCorrect ? (isDark ? '#1b5e20' : '#A5D6A7') : (isDark ? '#b71c1c' : '#EF9A9A') }
+              { 
+                borderColor: isCorrect ? '#A6E46D' : '#FFA2A2',
+                borderBottomColor: isCorrect ? '#58CC02' : '#FF4B4B'
+              }
             ]}
           >
             <Text style={[
-              styles.normalWord, 
-              { 
-                color: isCorrect ? (isDark ? '#81c784' : '#2E7D32') : (isDark ? '#e57373' : '#C62828'), 
-                marginHorizontal: 0, 
-                paddingVertical: 0 
-              }
+              styles.wordText, 
+              { color: isCorrect ? '#3A8501' : '#C82D2D' }
             ]}>
               {token.text}
             </Text>
           </View>
         );
       }
+      
       return (
-        <Text key={token.id} style={[styles.normalWord, { color: isDark ? COLORS.textDark : COLORS.text }]}>
-          {token.text}
-        </Text>
+        <View 
+          key={token.id}
+          style={[
+            styles.inactiveWordContainer,
+            {
+              backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+              borderColor: isDark ? COLORS.borderDark : COLORS.border,
+              borderBottomColor: isDark ? '#162228' : '#E5E5E5',
+            }
+          ]}
+        >
+          <Text style={[styles.wordText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            {token.text}
+          </Text>
+        </View>
       );
     }
 
-    // Nếu từ đang phát âm và ở chế độ đọc trơn (hoặc không phân tích được vần)
+    // TRƯỜNG HỢP 2: Từ đang được phát âm (Active Word)
     const steps = token.spellingResult?.steps;
+    
+    // Nếu ở chế độ đọc trơn hoặc không có bước đánh vần
     if (mode === 'read' || !steps || activeStepIndex === -1 || activeStepIndex >= steps.length) {
       return (
-        <View key={token.id} style={styles.activeWordContainer}>
-          <Text style={styles.activeWordFull}>
+        <View 
+          key={token.id} 
+          style={[
+            styles.activeWordContainer,
+            {
+              backgroundColor: '#EFFFDF',
+              borderColor: COLORS.primary,
+              borderBottomColor: COLORS.primaryShadow,
+            }
+          ]}
+        >
+          <Text style={[styles.wordText, styles.activeWordText, { color: '#3A8501' }]}>
             {token.text}
           </Text>
         </View>
@@ -61,7 +93,7 @@ export const KaraokeText: React.FC = () => {
     const { onset, rhyme } = parsed;
     const originalText = token.text;
 
-    // Phân rã từ để tô màu chi tiết theo từng ký tự
+    // Phân rã từ thành Âm đầu và Vần để tô màu trực quan khi đánh vần
     let onsetPart = '';
     let rhymePart = originalText;
 
@@ -78,11 +110,11 @@ export const KaraokeText: React.FC = () => {
 
     switch (currentStep.type) {
       case 'onset':
-        onsetColor = COLORS.onset;
+        onsetColor = PHONIC_COLORS.onset;
         onsetWeight = 'bold';
         break;
       case 'rhyme':
-        rhymeColor = COLORS.rhyme;
+        rhymeColor = PHONIC_COLORS.rhyme;
         rhymeWeight = 'bold';
         break;
       case 'combined_no_tone':
@@ -92,7 +124,7 @@ export const KaraokeText: React.FC = () => {
         rhymeWeight = 'bold';
         break;
       case 'tone':
-        rhymeColor = COLORS.tone;
+        rhymeColor = PHONIC_COLORS.tone;
         onsetColor = isDark ? COLORS.textDark : COLORS.text;
         onsetWeight = 'bold';
         rhymeWeight = 'bold';
@@ -106,7 +138,17 @@ export const KaraokeText: React.FC = () => {
     }
 
     return (
-      <View key={token.id} style={styles.activeWordContainer}>
+      <View 
+        key={token.id} 
+        style={[
+          styles.activeWordContainer,
+          {
+            backgroundColor: '#EFFFDF',
+            borderColor: COLORS.primary,
+            borderBottomColor: COLORS.primaryShadow,
+          }
+        ]}
+      >
         {onsetPart ? (
           <Text style={[styles.spellingLetter, { color: onsetColor, fontWeight: onsetWeight }]}>
             {onsetPart}
@@ -124,7 +166,8 @@ export const KaraokeText: React.FC = () => {
       styles.container, 
       { 
         backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
-        borderColor: isDark ? '#2D3748' : COLORS.border
+        borderColor: isDark ? COLORS.borderDark : COLORS.border,
+        borderBottomColor: isDark ? '#162228' : '#D5D5D5',
       }
     ]}>
       <View style={styles.textWrapper}>
@@ -132,8 +175,19 @@ export const KaraokeText: React.FC = () => {
           if (token.isWord) {
             return renderWordToken(token);
           } else {
+            // Hiển thị các dấu câu, ký tự đặc biệt
+            const isNewline = token.text === '\n';
+            if (isNewline) {
+              return <View key={token.id} style={styles.newline} />;
+            }
             return (
-              <Text key={token.id} style={[styles.punctuation, { color: isDark ? '#718096' : COLORS.muted }]}>
+              <Text 
+                key={token.id} 
+                style={[
+                  styles.punctuation, 
+                  { color: isDark ? COLORS.mutedDark : COLORS.muted }
+                ]}
+              >
                 {token.text}
               </Text>
             );
@@ -146,68 +200,83 @@ export const KaraokeText: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     borderRadius: 24,
-    padding: 20,
+    padding: 16,
     borderWidth: 2,
+    borderBottomWidth: 5,
+    marginVertical: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.02,
     shadowRadius: 10,
     elevation: 2,
-    marginVertical: 12,
   },
   textWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    lineHeight: 48,
+    gap: 8,
   },
-  normalWord: {
-    fontSize: 28,
-    fontFamily: 'System',
-    marginHorizontal: 2,
-    paddingVertical: 4,
-    borderRadius: 8,
+  newline: {
+    width: '100%',
+    height: 10,
+  },
+  wordText: {
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  spellingLetter: {
+    fontSize: 24,
   },
   punctuation: {
-    fontSize: 28,
-    fontFamily: 'System',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginHorizontal: 2,
+  },
+  
+  // Hộp thẻ từ ở các trạng thái khác nhau
+  inactiveWordContainer: {
+    borderRadius: 14,
+    borderWidth: 2,
+    borderBottomWidth: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   activeWordContainer: {
     flexDirection: 'row',
+    borderRadius: 14,
+    borderWidth: 2,
+    borderBottomWidth: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     alignItems: 'center',
-    backgroundColor: COLORS.highlightBg,
-    borderRadius: 12,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginHorizontal: 2,
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
+    justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  activeWordFull: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.highlightText,
-    fontFamily: 'System',
-  },
-  spellingLetter: {
-    fontSize: 28,
-    fontFamily: 'System',
+  activeWordText: {
+    fontWeight: '900',
   },
   
-  // Styles phục vụ đánh giá phát âm đúng/sai
+  // Thẻ từ sau khi được bé đọc và chấm điểm
   assessedWordContainer: {
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginHorizontal: 2,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderBottomWidth: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   correctWord: {
-    backgroundColor: 'rgba(74, 222, 128, 0.15)',
+    backgroundColor: COLORS.correctBg,
   },
   incorrectWord: {
-    backgroundColor: 'rgba(248, 113, 113, 0.15)',
+    backgroundColor: COLORS.incorrectBg,
   },
 });
