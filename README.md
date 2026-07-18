@@ -1,107 +1,109 @@
-# 📚 Gia Sư Tập Đọc Lớp 1 (tiengviet-doc-app)
+# 📚 Vietnamese Phonics & Reading Assistant (tiengviet-doc-app)
 
-> Ứng dụng di động chéo nền tảng (iOS & Android) hỗ trợ học sinh lớp 1 học đánh vần, tập đọc trơn tiếng Việt chuẩn sư phạm theo cả giọng miền Bắc và miền Nam. Hỗ trợ trực quan khẩu hình và thủ ngữ cho trẻ khiếm thính hoặc chậm đọc chậm nói.
-
----
-
-## 🌟 Tính Năng Nổi Bật (Features)
-
-1. **Động cơ Đánh vần Tiếng Việt (Phonics Engine):** 
-   * Tự động tách âm tiết bất kỳ thành: **Âm đầu (Onset)**, **Phần vần (Rhyme)** và **Thanh điệu (Tone)**.
-   * Sinh công thức đánh vần trực quan chuẩn sư phạm (Ví dụ: `bàn` $\rightarrow$ *bờ - an - ban - huyền - bàn*).
-2. **Đồng bộ Karaoke mức độ Chữ cái:**
-   * Highlight từng cụm chữ cái tương thích thời gian thực với âm thanh phát ra.
-3. **Luyện phát âm thông minh với AI (AI STT Assessment):**
-   * Cho phép bé ghi âm giọng đọc trực tiếp. Sử dụng thuật toán so khớp con chung dài nhất (LCS) để đánh dấu từ đọc đúng (Xanh lá) hoặc đọc sai (Đỏ).
-   * Giả lập 3 mức độ đọc (Đúng 100%, Sai một số từ, Sai nhiều từ) giúp phụ huynh dễ dàng kiểm thử.
-4. **Phương ngữ Vùng miền (Dialect Support):**
-   * Hỗ trợ phát âm và cách đánh vần khác biệt theo giọng Bắc và giọng Nam (Ví dụ: Chữ `v` phát âm "vờ" ở miền Bắc, "dờ" ở miền Nam; `r` phát âm "rờ" ở miền Bắc, "gờ" ở miền Nam).
-   * Tự động định tuyến các giọng đọc hệ thống (Northern/Southern Voices).
-5. **Trợ giúp Trực quan (Volunteer / Special Education):**
-   * **VisualPhonics:** Hiển thị 3 hộp màu phân tách rõ rệt: Đỏ (Âm đầu) - Xanh lá (Phần vần) - Xanh dương (Thanh điệu).
-   * **MouthSvg & HandSignSvg (Vector):** Hoạt họa khẩu hình miệng (khép miệng, mở rộng, cười dẹt, chu tròn) và outlines chữ cái thủ ngữ ngón tay theo chuẩn VSL (Ngôn ngữ ký hiệu Việt Nam).
-6. **Chế độ Sáng/Tối (Light/Dark Mode Customization):**
-   * Hỗ trợ đổi giao diện tối giúp chống mỏi mắt cho trẻ khi học tối, thiết kế Neumorphism tròn trịa thân thiện.
+> A cross-platform (iOS & Android) mobile application built with React Native and Expo, designed to help 1st-grade children master Vietnamese spelling, syllables, and pronunciation. Features regional dialect options (Northern & Southern accents) and interactive visual aids for children with special education needs (hearing-impaired or language-delayed).
 
 ---
 
-## 🛠️ Công Nghệ Sử Dụng (Tech Stack)
+## 🌟 Core Features
 
-* **Core Framework:** React Native với **Expo SDK 54** (TypeScript).
-* **Quản lý Âm thanh & Ghi âm:** `expo-speech` (TTS) và `expo-av` (Microphone recording).
-* **Hình ảnh Vector:** `react-native-svg` (vẽ tay thủ ngữ và khẩu hình miệng).
-* **Kiểm thử (Testing):** **Vitest** (Unit & Integration tests).
+1. **Vietnamese Phonics Engine:**
+   * Automatically parses any Vietnamese word into its constituent linguistic components: **Onset (Âm đầu)**, **Rhyme (Phần vần)**, and **Tone (Thanh điệu)**.
+   * Generates step-by-step spelling cues matching primary school teaching pedagogy (e.g., `bàn` $\rightarrow$ *bờ - an - ban - huyền - bàn*).
+2. **Karaoke-Style Text Syncing:**
+   * Highlights specific syllables and letters in real-time as they are being read out loud.
+3. **AI Pronunciation Assessment (STT):**
+   * Uses local microphone recording to evaluate user speech.
+   * Implements a **Longest Common Subsequence (LCS)** word alignment algorithm to highlight correctly read words in green and mispronounced or skipped words in red.
+   * Includes a high-fidelity parent simulator popup for dry-run testing (100% correct, minor mistakes, major mistakes) without requiring live speaking.
+4. **Regional Dialect Toggle:**
+   * Supports accent-specific spelling rules for Northern and Southern dialects (e.g., the letter `v` is spelled as "vờ" in the North but pronounced as "dờ" in the South; the letter `r` is spelled as "rờ" in the North but pronounced as "gờ" in the South).
+   * Automatically routes TTS to native Northern or Southern system voices.
+5. **Special Education Visual Aids:**
+   * **VisualPhonics:** Displays 3 color-coded cards indicating Onset (Red), Rhyme (Green), and Tone (Blue) to break down syllables visually.
+   * **Mouth & Hand Sign SVGs:** Programmatically renders lip positions (closed, wide open, semi-open, smiling, rounded) and VSL (Vietnamese Sign Language) finger-spelling outlines for all 29 Vietnamese letters.
+6. **Polished Neumorphic Theme Customization:**
+   * Features clean, rounded neumorphic cards with soft drop shadows.
+   * Supports a system-wide Dark Mode toggle in the header of all screens to reduce eye strain during evening study sessions.
 
 ---
 
-## 📂 Cấu Trúc Thư Mục (Folder Structure)
+## 🛠️ Technology Stack
+
+* **Core Framework:** React Native with **Expo SDK 54** (TypeScript).
+* **Audio & Speech:** `expo-speech` (Text-to-Speech) and `expo-av` (Microphone recording).
+* **Vector Graphics:** `react-native-svg` (used for rendering hand signs and mouth configurations).
+* **Testing:** **Vitest** (Unit, Integration, and E2E simulation testing).
+
+---
+
+## 📂 Project Structure
 
 ```text
 tiengviet-doc-app/
-├── App.tsx                  # Điểm khởi đầu & định tuyến màn hình
-├── CLAUDE.md                # Cẩm nang vận hành dành cho AI Agent
-├── README.md                # Tài liệu hướng dẫn sử dụng này
-├── package.json             # Danh sách thư viện phụ thuộc
+├── App.tsx                  # Application entry point & screen router
+├── CLAUDE.md                # Agent developer guide (commands & workflow)
+├── README.md                # This user guide & technical documentation
+├── package.json             # NPM dependencies list
 ├── src/
-│   ├── components/          # Các Component giao diện dùng chung
-│   │   ├── ControlPanel.tsx # Điều khiển phát/dừng, tốc độ, phương ngữ
-│   │   ├── HandSignSvg.tsx  # Vẽ thủ ngữ ngón tay VSL (SVG)
-│   │   ├── KaraokeText.tsx  # Hiển thị chữ lớn & tô màu chữ cái karaoke
-│   │   ├── MouthSvg.tsx     # Vẽ hoạt họa khẩu hình phát âm (SVG)
-│   │   ├── PracticePanel.tsx# Khung ghi âm & chấm điểm AI STT
-│   │   ├── SignLanguage.tsx # Khối trợ giúp trực quan khiếm thính
-│   │   └── VisualPhonics.tsx# Khối phân tách hộp âm tiết 3 màu
+│   ├── components/          # Reusable UI Components
+│   │   ├── ControlPanel.tsx # Speed, playback mode, and dialect controls
+│   │   ├── HandSignSvg.tsx  # Renders VSL sign language vector hands
+│   │   ├── KaraokeText.tsx  # Handles karaoke highlighting and red/green results
+│   │   ├── MouthSvg.tsx     # Renders mouth position vector drawings
+│   │   ├── PracticePanel.tsx# Microphone recorder and AI STT interface
+│   │   ├── SignLanguage.tsx # Main wrapper for visual assistive aids
+│   │   └── VisualPhonics.tsx# Color-coded syllable breakdown component
 │   ├── context/
-│   │   └── ReaderContext.tsx# Quản lý luồng âm thanh & karaoke toàn cục
+│   │   └── ReaderContext.tsx# Core React context managing audio & playback loops
 │   ├── screens/
-│   │   ├── HomeScreen.tsx   # Màn hình nhập văn bản & bài mẫu
-│   │   └── ReaderScreen.tsx # Phòng học đọc tương tác
+│   │   ├── HomeScreen.tsx   # Text input screen with sample readings
+│   │   └── ReaderScreen.tsx # Interactive room screen for practice
 │   ├── services/
-│   │   ├── audioManager.ts  # Bọc API expo-speech bằng Promise
-│   │   └── phonicsEngine.ts # Bộ phân tích ngôn ngữ & vần Tiếng Việt
+│   │   ├── audioManager.ts  # Promise wrapper for expo-speech TTS
+│   │   └── phonicsEngine.ts # Primary linguistic parser & syllable tokenizer
 │   └── theme/
-│       └── colors.ts        # Bảng màu thiết kế sáng/tối pastel
+│       └── colors.ts        # Pastel light/dark mode color palettes
 ```
 
 ---
 
-## 🚀 Khởi Chạy Dự Án (Getting Started)
+## 🚀 Getting Started
 
-### 1. Cài đặt thư viện phụ thuộc
-Yêu cầu Node.js $\ge$ 18. Chạy lệnh sau tại thư mục dự án:
+### 1. Install Dependencies
+Requires Node.js $\ge$ 18. Execute the following command in the project root directory:
 ```bash
 npm install
 ```
 
-### 2. Chạy ứng dụng
+### 2. Run the Application
 
-#### Cách A: Chạy trên Thiết bị thực (iOS/Android) qua Expo Go (Khuyên dùng)
-1. Khởi động Expo dev server:
+#### Option A: Run on a Physical Device (Recommended)
+1. Start the Expo development server:
    ```bash
    npx expo start --tunnel
    ```
-   *Lưu ý: Flag `--tunnel` giúp kết nối thiết bị di động của bạn qua mạng Internet mà không cần chung mạng Wi-Fi với máy tính.*
-2. Cài đặt ứng dụng **Expo Go** trên điện thoại từ App Store (iOS) hoặc Google Play (Android).
-3. Mở Camera quét mã QR để tải và chạy trực tiếp ứng dụng trên điện thoại.
+   *Note: The `--tunnel` flag enables connecting your physical mobile device over the internet, bypassing local network/Wi-Fi restrictions.*
+2. Download the free **Expo Go** app from the App Store (iOS) or Google Play Store (Android).
+3. Scan the QR code displayed in your terminal using your phone camera to load and run the app.
 
-#### Cách B: Chạy trên Trình duyệt Web
-1. Khởi động web dev server:
+#### Option B: Run in a Web Browser
+1. Start the web development server:
    ```bash
    npx expo start --web
    ```
-2. Ứng dụng sẽ tự động hiển thị tại địa chỉ `http://localhost:8081`.
+2. The browser will automatically open to `http://localhost:8081`.
 
 ---
 
-## 🧪 Hệ Thống Kiểm Thử (Testing)
+## 🧪 Testing Guide
 
-Dự án sử dụng **Vitest** để đảm bảo tính ổn định và chính xác cao nhất cho Động cơ Đánh vần và các kịch bản so khớp chữ.
+We use **Vitest** for unit, integration, and end-to-end (E2E) simulation testing.
 
-* **Chạy toàn bộ các ca kiểm thử (Unit & Integration tests):**
+* **Execute the entire test suite:**
   ```bash
   npm run test
   ```
-* **Chạy type check tĩnh:**
+* **Run static TypeScript compilation check:**
   ```bash
   npx tsc --noEmit
   ```
