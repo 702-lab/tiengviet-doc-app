@@ -68,7 +68,7 @@ export const ControlPanel: React.FC = () => {
 
       {/* Hàng 3: Chọn giọng đọc vùng miền */}
       <View style={styles.optionRow}>
-        <Text style={[styles.optionLabel, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Giọng đọc vùng miền:</Text>
+        <Text style={[styles.optionLabel, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Giọng đọc & Phương ngữ:</Text>
         <View style={styles.optionsContainer}>
           <TouchableOpacity
             style={[
@@ -90,6 +90,28 @@ export const ControlPanel: React.FC = () => {
                miền Bắc
             </Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.optButton, 
+              dialect === 'central' && styles.activeOpt,
+              {
+                backgroundColor: isDark ? '#2D3748' : '#F8F9FA',
+                borderColor: isDark ? '#4A5568' : COLORS.border
+              }
+            ]}
+            onPress={() => setDialect('central')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.optText, 
+              dialect === 'central' && styles.activeOptText,
+              { color: isDark ? COLORS.textDark : COLORS.text }
+            ]}>
+               miền Trung
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[
               styles.optButton, 
@@ -259,7 +281,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   optText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   activeOptText: {

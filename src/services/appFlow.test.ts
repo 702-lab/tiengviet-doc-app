@@ -10,7 +10,6 @@ describe('Integration Test: Phonics Engine & Dialect Synchronization', () => {
     const wordVeNorth = tokensNorth.find(t => t.text === 'vẽ');
     
     expect(wordVeNorth).toBeDefined();
-    // Bắc: "vờ" - "e" - "ve" - "ngã" - "vẽ"
     expect(wordVeNorth?.spellingResult?.spellingText).toBe('vờ - e - ve - ngã - vẽ');
     expect(wordVeNorth?.spellingResult?.steps[0].speech).toBe('vờ');
 
@@ -19,19 +18,31 @@ describe('Integration Test: Phonics Engine & Dialect Synchronization', () => {
     const wordVeSouth = tokensSouth.find(t => t.text === 'vẽ');
 
     expect(wordVeSouth).toBeDefined();
-    // Nam: Phát âm âm đầu v thành "dờ", rồi vần "e", kết hợp thành chữ viết "ve" -> "dờ - e - ve - ngã - vẽ"
     expect(wordVeSouth?.spellingResult?.spellingText).toBe('dờ - e - ve - ngã - vẽ');
     expect(wordVeSouth?.spellingResult?.steps[0].speech).toBe('dờ');
   });
 
   it('should handle local Southern dialect spelling variations for "r" and "gi"', () => {
-    // Rổ rá -> Giọng Nam đọc phụ âm r thành gờ, sau đó đánh vần kết hợp chữ viết "rô"
     const s1 = generateSpellingSteps('rổ', 'south');
     expect(s1.spellingText).toBe('gờ - ô - rô - hỏi - rổ');
 
-    // Gió -> Giọng Nam đọc gi thành dờ, sau đó đánh vần kết hợp chữ viết "gio"
     const s2 = generateSpellingSteps('gió', 'south');
     expect(s2.spellingText).toBe('dờ - o - gio - sắc - gió');
+  });
+
+  it('should correctly spell retroflex onset consonants in Central dialect', () => {
+    // Giọng miền Trung: r phát âm uốn lưỡi rung đầu lưỡi "rờ", tr phát âm "trờ", s phát âm "sờ"
+    const s1 = generateSpellingSteps('rổ', 'central');
+    expect(s1.spellingText).toBe('rờ - ô - rô - hỏi - rổ');
+    expect(s1.steps[0].speech).toBe('rờ');
+
+    const s2 = generateSpellingSteps('tre', 'central');
+    expect(s2.spellingText).toBe('trờ - e - tre');
+    expect(s2.steps[0].speech).toBe('trờ');
+
+    const s3 = generateSpellingSteps('sẻ', 'central');
+    expect(s3.spellingText).toBe('sờ - e - se - hỏi - sẻ');
+    expect(s3.steps[0].speech).toBe('sờ');
   });
 });
 

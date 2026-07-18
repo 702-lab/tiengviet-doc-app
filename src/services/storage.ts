@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface AppSettings {
   theme: 'light' | 'dark';
-  dialect: 'north' | 'south';
+  dialect: 'north' | 'south' | 'central';
   speed: number;
 }
 
