@@ -1,29 +1,38 @@
 export const COLORS = {
-  // Brand colors
-  primary: '#FF7F50',      // Coral orange - energetic & friendly
-  secondary: '#4ECDC4',    // Soft teal
-  accent: '#FFD166',       // Pastel yellow
-  background: '#FCFBF7',   // Cream white - easy on kids' eyes
-  darkBackground: '#121214',
-  cardBg: '#FFFFFF',
-  cardBgDark: '#1E1E24',
-  text: '#2F3E46',         // Deep charcoal instead of pure black
-  textDark: '#F4F5F6',
-  muted: '#8D99AE',
-  border: '#E2E8F0',
+  // Duolingo-inspired Color Palette
+  primary: '#58CC02',        // Duolingo Green
+  primaryShadow: '#46A302',  // Pressed depth color for Green
+  
+  secondary: '#1CB0F6',      // Duolingo Blue (used for playing / spelling action)
+  secondaryShadow: '#1899D6',// Pressed depth color for Blue
+  
+  accent: '#FF9600',         // Duolingo Orange (used for recording / highlights)
+  accentShadow: '#E68500',   // Pressed depth color for Orange
+  
+  purple: '#A560E8',         // Duolingo Purple (used for secondary status, theme switch, etc)
+  purpleShadow: '#8C52C6',   // Pressed depth color for Purple
+  
+  error: '#FF4B4B',          // Duolingo Red (incorrect attempts)
+  errorShadow: '#EA2B2B',    // Pressed depth color for Red
 
-  // Visual Phonics colors (highly contrasting for cognitive learning)
-  onset: '#E63946',        // Vibrant Red/Coral for Âm đầu
-  rhyme: '#2A9D8F',        // Forest Green/Teal for Vần
-  tone: '#457B9D',         // Ocean Blue for Thanh điệu
+  correctBg: '#D7FFB7',      // Soft light green background for correct words
+  correctBorder: '#84D8FF',  // Soft border
   
-  // Highlight states (Karaoke styling)
-  highlightBg: '#FFE5B4',   // Warm light orange for active syllable
-  highlightText: '#E76F51', // Accent text color when active
+  incorrectBg: '#FFDFDF',    // Soft light red background for incorrect words
   
-  // Feedback
-  success: '#70E000',
-  error: '#D90429',
+  // Neutrals for Light Mode
+  bg: '#FFFFFF',             // Pure White
+  bgSoft: '#F7F7F7',         // Clean Soft Gray
+  text: '#3C3C3C',           // Charcoal Gray (Duolingo's primary text)
+  muted: '#AFAFAF',          // Muted Gray (Duolingo's secondary text)
+  border: '#E5E5E5',         // Soft border lines (Duolingo style)
+  cardBg: '#FFFFFF',         // Card background
+
+  // Neutrals for Dark Mode (Duolingo Dark Midnight Style)
+  bgDark: '#131F24',         // Very Dark Midnight Slate
+  bgSoftDark: '#1F2E35',     // Slightly lighter Midnight Slate for card containers
+  textDark: '#F1F5F9',       // Clean Off-White
+  mutedDark: '#85929E',      // Slate Gray
+  borderDark: '#37464F',     // Slate Border
+  cardBgDark: '#1F2E35',     // Dark Card background
 };
-
-export type ThemeColors = typeof COLORS;

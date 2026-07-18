@@ -20,6 +20,8 @@ export const PracticePanel: React.FC = () => {
   } = useReader();
   
   const [showCelebration, setShowCelebration] = useState(false);
+  const [pressedBtn, setPressedBtn] = useState<'rec' | 'stop' | 'playVoice' | 'retry' | null>(null);
+
   const isDark = theme === 'dark';
 
   // Kích hoạt hiệu ứng chúc mừng khi bé đạt điểm cao (>= 80%)
@@ -65,27 +67,44 @@ export const PracticePanel: React.FC = () => {
       styles.container,
       {
         backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
-        borderColor: isDark ? '#2D3748' : COLORS.border
+        borderColor: isDark ? COLORS.borderDark : COLORS.border,
+        borderBottomColor: isDark ? '#162228' : '#D5D5D5',
       }
     ]}>
       {/* Hiệu ứng pháo hoa & sao rơi trên màn hình */}
       {showCelebration && <Celebration />}
 
-      <Text style={[styles.title, { color: isDark ? COLORS.textDark : COLORS.text }]}>🎙️ Luyện Phát Âm (AI STT)</Text>
+      <Text style={[styles.title, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+        🎙️ Thử Thách Đọc To
+      </Text>
 
       {/* TH 1: Đang trong quá trình ghi âm */}
       {isRecording && (
         <View style={styles.stateContainer}>
-          <View style={styles.pulseIndicator} />
+          <View style={styles.pulseContainer}>
+            <View style={styles.pulseRing} />
+            <Text style={styles.micIcon}>🎙️</Text>
+          </View>
           <Text style={[styles.stateText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
             Bé hãy nhìn vào chữ phía trên và đọc to lên nhé...
           </Text>
+          
           <TouchableOpacity 
-            style={[styles.actionBtn, styles.stopRecBtn]} 
+            activeOpacity={1}
+            onPressIn={() => setPressedBtn('stop')}
+            onPressOut={() => setPressedBtn(null)}
             onPress={stopRecordingAndAssess}
-            activeOpacity={0.8}
+            style={[
+              styles.actionBtn,
+              {
+                backgroundColor: COLORS.error,
+                borderBottomColor: COLORS.errorShadow,
+                transform: [{ translateY: pressedBtn === 'stop' ? 2 : 0 }],
+                borderBottomWidth: pressedBtn === 'stop' ? 1 : 4,
+              }
+            ]}
           >
-            <Text style={styles.btnText}>⏹️ Hoàn thành đọc</Text>
+            <Text style={styles.btnText}>⏹️ HOÀN THÀNH ĐỌC</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -95,7 +114,7 @@ export const PracticePanel: React.FC = () => {
         <View style={styles.stateContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
           <Text style={[styles.stateText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
-            Trí tuệ nhân tạo đang phân tích giọng đọc...
+            Đang chấm điểm giọng đọc của bé...
           </Text>
         </View>
       )}
@@ -103,39 +122,64 @@ export const PracticePanel: React.FC = () => {
       {/* TH 3: Đã có kết quả đánh giá */}
       {wordAssessment !== null && assessmentScore !== null && (
         <View style={styles.resultContainer}>
-          <Text style={styles.starsText}>{getStars(assessmentScore)}</Text>
-          <Text style={[styles.scoreText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
-            Điểm chính xác: {assessmentScore}%
-          </Text>
-          <Text style={styles.messageText}>{getMessage(assessmentScore)}</Text>
+          <View style={[
+            styles.scoreCard, 
+            { 
+              backgroundColor: assessmentScore >= 80 ? COLORS.correctBg : COLORS.incorrectBg,
+              borderColor: assessmentScore >= 80 ? '#A6E46D' : '#FFA2A2'
+            }
+          ]}>
+            <Text style={styles.starsText}>{getStars(assessmentScore)}</Text>
+            <Text style={[styles.scoreText, { color: COLORS.text }]}>
+              Độ chính xác: {assessmentScore}%
+            </Text>
+            <Text style={[styles.messageText, { color: assessmentScore >= 80 ? '#3A8501' : '#C82D2D' }]}>
+              {getMessage(assessmentScore)}
+            </Text>
+          </View>
           
           <View style={styles.resultActions}>
             {recordedAudioUri && (
               <TouchableOpacity 
-                style={[
-                  styles.actionBtn, 
-                  styles.playVoiceBtn,
-                ]} 
+                activeOpacity={1}
+                onPressIn={() => setPressedBtn('playVoice')}
+                onPressOut={() => setPressedBtn(null)}
                 onPress={playRecordedAudio}
-                activeOpacity={0.8}
+                style={[
+                  styles.actionBtn,
+                  styles.playVoiceBtn,
+                  {
+                    backgroundColor: COLORS.secondary,
+                    borderBottomColor: COLORS.secondaryShadow,
+                    transform: [{ translateY: pressedBtn === 'playVoice' ? 2 : 0 }],
+                    borderBottomWidth: pressedBtn === 'playVoice' ? 1 : 4,
+                  }
+                ]}
               >
-                <Text style={styles.btnText}>🔊 Nghe lại giọng đọc</Text>
+                <Text style={styles.btnText}>🔊 NGHE LẠI</Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity 
+              activeOpacity={1}
+              onPressIn={() => setPressedBtn('retry')}
+              onPressOut={() => setPressedBtn(null)}
+              onPress={clearAssessment}
               style={[
                 styles.actionBtn, 
                 styles.resetBtn,
                 {
-                  backgroundColor: isDark ? '#2D3748' : '#F1F3F5',
-                  borderColor: isDark ? '#4A5568' : COLORS.border
+                  backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+                  borderColor: isDark ? COLORS.borderDark : COLORS.border,
+                  borderBottomColor: isDark ? '#162228' : '#D5D5D5',
+                  transform: [{ translateY: pressedBtn === 'retry' ? 2 : 0 }],
+                  borderBottomWidth: pressedBtn === 'retry' ? 1 : 4,
                 }
-              ]} 
-              onPress={clearAssessment}
-              activeOpacity={0.8}
+              ]}
             >
-              <Text style={[styles.resetBtnText, { color: isDark ? COLORS.textDark : COLORS.text }]}>🔄 Luyện đọc lại</Text>
+              <Text style={[styles.resetBtnText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+                🔄 THỬ LẠI
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -144,15 +188,26 @@ export const PracticePanel: React.FC = () => {
       {/* TH 4: Trạng thái chờ bắt đầu luyện đọc */}
       {!isRecording && !isAssessing && wordAssessment === null && (
         <View style={styles.idleContainer}>
-          <Text style={[styles.infoText, { color: isDark ? '#718096' : COLORS.muted }]}>
-            Bé hãy tự đọc đoạn văn trên. Hệ thống sẽ lắng nghe và tô màu xanh/đỏ cho các từ bé đọc đúng/sai!
+          <Text style={[styles.infoText, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>
+            Nhấn chiếc nút cam dưới đây để lắng nghe giọng đọc của bé, hệ thống sẽ tự động tô màu xanh/đỏ cho các từ bé đọc đúng/sai nhé! 🦉
           </Text>
+          
           <TouchableOpacity 
-            style={[styles.actionBtn, styles.startRecBtn]} 
+            activeOpacity={1}
+            onPressIn={() => setPressedBtn('rec')}
+            onPressOut={() => setPressedBtn(null)}
             onPress={startRecording}
-            activeOpacity={0.8}
+            style={[
+              styles.actionBtn,
+              {
+                backgroundColor: COLORS.accent,
+                borderBottomColor: COLORS.accentShadow,
+                transform: [{ translateY: pressedBtn === 'rec' ? 3 : 0 }],
+                borderBottomWidth: pressedBtn === 'rec' ? 1 : 4,
+              }
+            ]}
           >
-            <Text style={styles.btnText}>🎙️ Bắt đầu ghi âm tự đọc</Text>
+            <Text style={styles.btnText}>🎙️ BẮT ĐẦU ĐỌC TO</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -165,37 +220,52 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 16,
     borderWidth: 2,
+    borderBottomWidth: 5,
+    marginVertical: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.02,
     shadowRadius: 10,
     elevation: 2,
-    marginVertical: 12,
-    position: 'relative', // Quan trọng để định vị hoạt ảnh sao bay
+    position: 'relative',
   },
   title: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '800',
     marginBottom: 12,
     letterSpacing: 0.5,
   },
   stateContainer: {
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
-  pulseIndicator: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.error,
-    marginBottom: 8,
-    opacity: 0.8,
+  pulseContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFE3E3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 2,
+    borderColor: COLORS.error,
+    opacity: 0.4,
+  },
+  micIcon: {
+    fontSize: 28,
   },
   stateText: {
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 16,
-    fontWeight: '600',
+    marginBottom: 18,
+    fontWeight: '700',
+    paddingHorizontal: 12,
   },
   loader: {
     marginBottom: 12,
@@ -203,29 +273,18 @@ const styles = StyleSheet.create({
   actionBtn: {
     width: '100%',
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  startRecBtn: {
-    backgroundColor: COLORS.primary,
-  },
-  stopRecBtn: {
-    backgroundColor: COLORS.error,
   },
   playVoiceBtn: {
-    backgroundColor: COLORS.secondary,
     flex: 1.2,
   },
   btnText: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '900',
+    letterSpacing: 0.8,
   },
   idleContainer: {
     alignItems: 'center',
@@ -234,40 +293,48 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 18,
-    marginBottom: 16,
-    paddingHorizontal: 10,
+    marginBottom: 18,
+    paddingHorizontal: 12,
   },
   resultContainer: {
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
+    width: '100%',
+  },
+  scoreCard: {
+    width: '100%',
+    borderRadius: 20,
+    borderWidth: 2,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 18,
   },
   starsText: {
-    fontSize: 28,
-    marginBottom: 4,
+    fontSize: 26,
+    marginBottom: 6,
   },
   scoreText: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '900',
     marginBottom: 6,
   },
   messageText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
+    fontSize: 13,
+    fontWeight: '800',
     textAlign: 'center',
-    marginBottom: 16,
   },
   resultActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
     width: '100%',
   },
   resetBtn: {
-    borderWidth: 1.5,
+    borderWidth: 2,
     flex: 1,
   },
   resetBtnText: {
-    fontSize: 15,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
 });
