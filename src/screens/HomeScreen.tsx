@@ -251,6 +251,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
             </View>
           )}
 
+          {totalSessions === 0 && (
+            <View style={[styles.remedialBox, { borderColor: isDark ? COLORS.borderDark : COLORS.border, borderStyle: 'dashed', borderWidth: 2, padding: 12, borderRadius: 14, marginTop: 12 }]}>
+              <Text style={[styles.remedialTitle, { color: isDark ? COLORS.mutedDark : COLORS.muted, textAlign: 'center', marginBottom: 0, fontSize: 13, lineHeight: 18 }]}>
+                🦉 Bé chưa có lịch sử đọc bài. Hãy chọn một truyện mẫu phía dưới hoặc nhập văn bản ở trên để bắt đầu học cùng Cú Nhỏ nhé!
+              </Text>
+            </View>
+          )}
+
           {totalSessions > 0 && (
             <View style={styles.historySection}>
               <TouchableOpacity 
@@ -342,46 +350,60 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
         ))}
 
         {/* Danh sách bài tự soạn */}
-        {customPassages.length > 0 && (
-          <>
-            <Text style={[styles.sectionTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
-              📝 Bài tự soạn của ba mẹ
-            </Text>
-            {customPassages.map((passage, index) => (
-              <View 
-                key={index}
-                style={[
-                  styles.customPassageCard,
-                  { 
-                    backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
-                    borderColor: isDark ? COLORS.borderDark : COLORS.border
-                  }
-                ]}
+        <Text style={[styles.sectionTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+          📝 Bài tự soạn của ba mẹ
+        </Text>
+        {customPassages.length > 0 ? (
+          customPassages.map((passage, index) => (
+            <View 
+              key={index}
+              style={[
+                styles.customPassageCard,
+                { 
+                  backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+                  borderColor: isDark ? COLORS.borderDark : COLORS.border,
+                  borderBottomColor: isDark ? '#162228' : '#D5D5D5',
+                }
+              ]}
+            >
+              <TouchableOpacity 
+                style={styles.customPassageContent} 
+                onPress={() => handleStartPlay(passage)}
               >
-                <TouchableOpacity 
-                  style={styles.customPassageContent} 
-                  onPress={() => handleStartPlay(passage)}
+                <Text style={[styles.customPassageTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+                  Bài tự soạn {customPassages.length - index}
+                </Text>
+                <Text 
+                  numberOfLines={1} 
+                  style={[styles.customPassageSnippet, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}
                 >
-                  <Text style={[styles.customPassageTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
-                    Bài tự soạn {customPassages.length - index}
-                  </Text>
-                  <Text 
-                    numberOfLines={1} 
-                    style={[styles.customPassageSnippet, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}
-                  >
-                    {passage}
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.deleteBtn} 
-                  onPress={() => handleDeletePassage(index)}
-                >
-                  <Text style={styles.deleteBtnText}>🗑️</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </>
+                  {passage}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.deleteBtn} 
+                onPress={() => handleDeletePassage(index)}
+              >
+                <Text style={styles.deleteBtnText}>🗑️</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        ) : (
+          <View style={[
+            styles.storyCard,
+            {
+              backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+              borderColor: isDark ? COLORS.borderDark : COLORS.border,
+              borderBottomColor: isDark ? '#162228' : '#D5D5D5',
+              borderStyle: 'dashed',
+              padding: 18,
+            }
+          ]}>
+            <Text style={[styles.storySnippet, { color: isDark ? COLORS.mutedDark : COLORS.muted, textAlign: 'center', fontStyle: 'italic', lineHeight: 18 }]}>
+              Chưa có bài tự soạn nào. Ba mẹ hãy nhập câu từ ở ô soạn thảo phía trên để lưu bài đọc riêng cho bé nhé! ✍️
+            </Text>
+          </View>
         )}
       </ScrollView>
     </KeyboardAvoidingView>
