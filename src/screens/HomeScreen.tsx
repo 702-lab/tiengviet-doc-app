@@ -13,6 +13,7 @@ import {
 import { useReader } from '../context/ReaderContext';
 import { loadCustomPassages, saveCustomPassages, loadSessionLogs, clearSessionLogs, getUnlockedAchievements, clearUnlockedAchievements, SessionLog } from '../services/storage';
 import { ACHIEVEMENTS } from '../theme/achievements';
+import { supabase } from '../services/supabaseClient';
 import { COLORS } from '../theme/colors';
 
 const SAMPLE_STORIES = [
@@ -37,6 +38,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
   const [isPlayPressed, setIsPlayPressed] = useState(false);
   const [isThemePressed, setIsThemePressed] = useState(false);
   const [isClearPressed, setIsClearPressed] = useState(false);
+  const [isLogoutPressed, setIsLogoutPressed] = useState(false);
 
   const isDark = theme === 'dark';
 
@@ -100,6 +102,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
             setSessionLogs([]);
             setUnlockedBadges([]);
             Alert.alert('Thành công', 'Đã xóa toàn bộ lịch sử học tập và huy chương.');
+          }
+        }
+      ]
+    );
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Đăng xuất',
+      'Bố mẹ có chắc chắn muốn đăng xuất tài khoản không?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { 
+          text: 'Đăng xuất', 
+          style: 'destructive',
+          onPress: async () => {
+            await supabase.auth.signOut();
           }
         }
       ]
@@ -364,6 +383,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
                     ]}
                   >
                     <Text style={styles.clearHistoryTextBtn}>🗑️ XÓA TOÀN BỘ LỊCH SỬ</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={1}
+                    onPressIn={() => setIsLogoutPressed(true)}
+                    onPressOut={() => setIsLogoutPressed(false)}
+                    onPress={handleLogout}
+                    style={[
+                      styles.logoutBtn,
+                      {
+                        backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+                        borderColor: isDark ? COLORS.borderDark : COLORS.border,
+                        borderBottomColor: isDark ? '#162228' : '#D5D5D5',
+                        transform: [{ translateY: isLogoutPressed ? 2 : 0 }],
+                        borderBottomWidth: isLogoutPressed ? 1 : 4,
+                        marginTop: 10,
+                      }
+                    ]}
+                  >
+                    <Text style={[styles.logoutTextBtn, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+                      🚪 ĐĂNG XUẤT TÀI KHOẢN
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -734,5 +775,17 @@ const styles = StyleSheet.create({
   },
   badgeDescText: {
     fontSize: 11,
+  },
+  logoutBtn: {
+    borderRadius: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+  },
+  logoutTextBtn: {
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
 });
