@@ -4,9 +4,9 @@ import { useReader } from '../context/ReaderContext';
 import { COLORS } from '../theme/colors';
 
 export const VisualPhonics: React.FC = () => {
-  const { activeWordParsed, activeStepIndex, mode, tokens, activeTokenId } = useReader();
+  const { activeWordParsed, activeStepIndex, mode, tokens, activeTokenId, theme } = useReader();
+  const isDark = theme === 'dark';
 
-  // Tìm token hiện tại để lấy danh sách bước đánh vần
   const activeToken = tokens.find(t => t.id === activeTokenId);
   const steps = activeToken?.spellingResult?.steps;
   const currentStep = steps && activeStepIndex !== -1 && activeStepIndex < steps.length 
@@ -15,8 +15,14 @@ export const VisualPhonics: React.FC = () => {
 
   if (!activeWordParsed) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>
+      <View style={[
+        styles.emptyContainer,
+        { 
+          backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
+          borderColor: isDark ? '#2D3748' : COLORS.border
+        }
+      ]}>
+        <Text style={[styles.emptyText, { color: isDark ? '#718096' : COLORS.muted }]}>
           Chạm vào một từ bất kỳ hoặc bấm nút "Dạy đọc" để xem phân tích âm tiết tại đây
         </Text>
       </View>
@@ -25,29 +31,34 @@ export const VisualPhonics: React.FC = () => {
 
   const { original, onset, onsetSpeech, rhyme, tone } = activeWordParsed;
 
-  // Xác định xem hộp nào đang được highlight
   const isOnsetHighlight = mode === 'spell' && currentStep?.type === 'onset';
   const isRhymeHighlight = mode === 'spell' && currentStep?.type === 'rhyme';
   const isToneHighlight = mode === 'spell' && currentStep?.type === 'tone';
   const isCombinedHighlight = mode === 'spell' && currentStep?.type === 'combined_no_tone';
   const isFinalHighlight = mode === 'read' || currentStep?.type === 'final';
 
-  // Chuyển đổi tên dấu thanh sang chữ hoa hiển thị cho trực quan
   const displayToneName = tone.toUpperCase();
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Phân Tích Âm Tiết</Text>
+    <View style={[
+      styles.container, 
+      { 
+        backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
+        borderColor: isDark ? '#2D3748' : COLORS.border
+      }
+    ]}>
+      <Text style={[styles.title, { color: isDark ? COLORS.textDark : COLORS.text }]}>Phân Tích Âm Tiết</Text>
       
-      <View style={styles.wordTitleContainer}>
+      <View style={[styles.wordTitleContainer, { borderBottomColor: isDark ? '#2D3748' : COLORS.border }]}>
         <Text style={[
           styles.bigWord, 
+          { color: isDark ? COLORS.textDark : COLORS.text },
           isFinalHighlight && styles.glowingWord
         ]}>
           {original}
         </Text>
         {mode === 'spell' && currentStep && (
-          <Text style={styles.stepSpeechText}>
+          <Text style={[styles.stepSpeechText, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>
             Đang đọc: <Text style={styles.highlightText}>{currentStep.speech.toUpperCase()}</Text>
           </Text>
         )}
@@ -58,16 +69,26 @@ export const VisualPhonics: React.FC = () => {
         {onset ? (
           <View style={[
             styles.partBox, 
-            { borderColor: COLORS.onset },
+            { 
+              borderColor: COLORS.onset,
+              backgroundColor: isDark ? '#1a1315' : '#FCFBF7'
+            },
             isOnsetHighlight && styles.activeBoxOnset,
             isCombinedHighlight && styles.combinedActiveBox
           ]}>
             <Text style={[styles.boxLabel, { color: COLORS.onset }]}>ÂM ĐẦU</Text>
-            <Text style={styles.boxText}>{onset}</Text>
-            <Text style={styles.boxSpeech}>({onsetSpeech})</Text>
+            <Text style={[styles.boxText, { color: isDark ? COLORS.textDark : COLORS.text }]}>{onset}</Text>
+            <Text style={[styles.boxSpeech, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>({onsetSpeech})</Text>
           </View>
         ) : (
-          <View style={[styles.partBox, styles.disabledBox]}>
+          <View style={[
+            styles.partBox, 
+            styles.disabledBox,
+            {
+              backgroundColor: isDark ? '#16161a' : '#F1F3F5',
+              borderColor: isDark ? '#2D3748' : '#CED4DA'
+            }
+          ]}>
             <Text style={styles.disabledLabel}>ÂM ĐẦU</Text>
             <Text style={styles.disabledText}>-</Text>
             <Text style={styles.disabledSub}>(Không có)</Text>
@@ -77,33 +98,45 @@ export const VisualPhonics: React.FC = () => {
         {/* Hộp Phần vần */}
         <View style={[
           styles.partBox, 
-          { borderColor: COLORS.rhyme },
+          { 
+            borderColor: COLORS.rhyme,
+            backgroundColor: isDark ? '#111918' : '#FCFBF7'
+          },
           isRhymeHighlight && styles.activeBoxRhyme,
           isCombinedHighlight && styles.combinedActiveBox
         ]}>
           <Text style={[styles.boxLabel, { color: COLORS.rhyme }]}>PHẦN VẦN</Text>
-          <Text style={styles.boxText}>{rhyme}</Text>
-          <Text style={styles.boxSpeech}>({rhyme})</Text>
+          <Text style={[styles.boxText, { color: isDark ? COLORS.textDark : COLORS.text }]}>{rhyme}</Text>
+          <Text style={[styles.boxSpeech, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>({rhyme})</Text>
         </View>
 
         {/* Hộp Thanh điệu */}
         <View style={[
           styles.partBox, 
-          { borderColor: COLORS.tone },
+          { 
+            borderColor: COLORS.tone,
+            backgroundColor: isDark ? '#12171c' : '#FCFBF7'
+          },
           isToneHighlight && styles.activeBoxTone
         ]}>
           <Text style={[styles.boxLabel, { color: COLORS.tone }]}>THANH ĐIỆU</Text>
-          <Text style={styles.boxText}>
+          <Text style={[styles.boxText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
             {tone === 'ngang' ? '◌' : tone === 'huyền' ? '◌̀' : tone === 'sắc' ? '◌́' : tone === 'hỏi' ? '◌̉' : tone === 'ngã' ? '◌̃' : '◌̣'}
           </Text>
-          <Text style={styles.boxSpeech}>{displayToneName}</Text>
+          <Text style={[styles.boxSpeech, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>{displayToneName}</Text>
         </View>
       </View>
 
       {/* Hiển thị kịch bản đánh vần dưới dạng chữ */}
       {activeToken?.spellingResult?.spellingText && (
-        <View style={styles.scriptContainer}>
-          <Text style={styles.scriptTitle}>Công thức đánh vần:</Text>
+        <View style={[
+          styles.scriptContainer,
+          {
+            backgroundColor: isDark ? '#16161a' : '#F8F9FA',
+            borderColor: isDark ? '#2D3748' : COLORS.border
+          }
+        ]}>
+          <Text style={[styles.scriptTitle, { color: isDark ? '#718096' : COLORS.muted }]}>Công thức đánh vần:</Text>
           <Text style={styles.scriptText}>
             {activeToken.spellingResult.spellingText}
           </Text>
@@ -115,11 +148,9 @@ export const VisualPhonics: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.cardBg,
     borderRadius: 24,
     padding: 20,
     borderWidth: 2,
-    borderColor: COLORS.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -130,16 +161,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.text,
     marginBottom: 10,
     letterSpacing: 0.5,
   },
   emptyContainer: {
-    backgroundColor: COLORS.cardBg,
     borderRadius: 24,
     padding: 30,
     borderWidth: 2,
-    borderColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 12,
@@ -147,7 +175,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: COLORS.muted,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -156,14 +183,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     paddingBottom: 12,
     marginBottom: 15,
   },
   bigWord: {
     fontSize: 42,
     fontWeight: 'bold',
-    color: COLORS.text,
   },
   glowingWord: {
     color: COLORS.primary,
@@ -173,7 +198,6 @@ const styles = StyleSheet.create({
   },
   stepSpeechText: {
     fontSize: 16,
-    color: COLORS.muted,
     fontWeight: '600',
   },
   highlightText: {
@@ -188,7 +212,6 @@ const styles = StyleSheet.create({
   },
   partBox: {
     flex: 1,
-    backgroundColor: '#FCFBF7',
     borderRadius: 16,
     padding: 12,
     borderWidth: 2,
@@ -226,7 +249,6 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.03 }],
   },
   disabledBox: {
-    backgroundColor: '#F1F3F5',
     borderColor: '#CED4DA',
   },
   boxLabel: {
@@ -243,7 +265,6 @@ const styles = StyleSheet.create({
   boxText: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.text,
   },
   disabledText: {
     fontSize: 28,
@@ -252,7 +273,6 @@ const styles = StyleSheet.create({
   },
   boxSpeech: {
     fontSize: 14,
-    color: COLORS.muted,
     marginTop: 4,
     fontWeight: '500',
   },
@@ -263,16 +283,13 @@ const styles = StyleSheet.create({
   },
   scriptContainer: {
     marginTop: 15,
-    backgroundColor: '#F8F9FA',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   scriptTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.muted,
     marginBottom: 4,
   },
   scriptText: {

@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useReader } from '../context/ReaderContext';
 import { COLORS } from '../theme/colors';
 
-// Bản đồ hướng dẫn khẩu hình miệng cho các nguyên âm và phụ âm chính
 const MOUTH_GUIDE: { [key: string]: string } = {
   'a': 'Mở miệng rộng tự nhiên, lưỡi hạ thấp dưới đáy miệng.',
   'ă': 'Miệng mở rộng trung bình, cơ miệng căng hơn âm A.',
@@ -43,7 +42,6 @@ const MOUTH_GUIDE: { [key: string]: string } = {
   'x': 'Đầu lưỡi chạm răng dưới, đẩy luồng hơi ma sát nhẹ qua khe răng.',
 };
 
-// Bản đồ hướng dẫn thủ ngữ ngón tay (Finger spelling) chuẩn VSL
 const SIGN_GUIDE: { [key: string]: string } = {
   'a': 'Nắm tay lại, ngón cái ép sát dọc theo bên cạnh các ngón khác.',
   'ă': 'Giống chữ A, nhưng tay chuyển động vẽ một hình vòng cung đi lên.',
@@ -77,7 +75,8 @@ const SIGN_GUIDE: { [key: string]: string } = {
 };
 
 export const SignLanguage: React.FC = () => {
-  const { activeWordParsed, activeStepIndex, tokens, activeTokenId, mode } = useReader();
+  const { activeWordParsed, activeStepIndex, tokens, activeTokenId, mode, theme } = useReader();
+  const isDark = theme === 'dark';
 
   const activeToken = tokens.find(t => t.id === activeTokenId);
   const steps = activeToken?.spellingResult?.steps;
@@ -89,43 +88,56 @@ export const SignLanguage: React.FC = () => {
     return null;
   }
 
-  // Lấy ký tự đang được đánh vần hiện tại để tra cứu
   const activeChar = currentStep.text.toLowerCase();
-  
-  // Lấy hướng dẫn tương ứng
   const mouthInstruction = MOUTH_GUIDE[activeChar] || MOUTH_GUIDE[activeChar[0]] || 'Mở miệng phát âm tự nhiên theo âm thanh.';
   const signInstruction = SIGN_GUIDE[activeChar] || SIGN_GUIDE[activeChar[0]] || '';
 
-  // Không hiển thị nếu là bước phát âm từ cuối cùng hoặc đọc trơn (trừ khi trẻ khiếm thính cần học cấu trúc)
   if (currentStep.type === 'final' || mode === 'read') {
     return null;
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Trợ Giúp Trực Quan (Thiện Nguyện & Đặc Biệt)</Text>
+    <View style={[
+      styles.container, 
+      { 
+        backgroundColor: isDark ? '#16161a' : '#F8F9FA',
+        borderColor: isDark ? '#2D3748' : COLORS.border
+      }
+    ]}>
+      <Text style={[styles.title, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Trợ Giúp Trực Quan (Thiện Nguyện)</Text>
       
       <View style={styles.contentRow}>
         {/* Hộp khẩu hình miệng */}
-        <View style={styles.guideCard}>
+        <View style={[
+          styles.guideCard,
+          {
+            backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
+            borderColor: isDark ? '#2D3748' : '#E9ECEF'
+          }
+        ]}>
           <View style={styles.badgeContainer}>
-            <Text style={[styles.badge, { backgroundColor: '#E2F0D9', color: '#385723' }]}>KHẨU HÌNH MIỆNG</Text>
+            <Text style={[styles.badge, { backgroundColor: isDark ? '#2a441e' : '#E2F0D9', color: isDark ? '#a3e635' : '#385723' }]}>KHẨU HÌNH MIỆNG</Text>
           </View>
           <Text style={styles.activeLetter}>{currentStep.text.toUpperCase()}</Text>
-          <Text style={styles.instructionText}>{mouthInstruction}</Text>
+          <Text style={[styles.instructionText, { color: isDark ? COLORS.textDark : COLORS.text }]}>{mouthInstruction}</Text>
         </View>
 
         {/* Hộp thủ ngữ ký hiệu chữ cái */}
         {signInstruction ? (
-          <View style={styles.guideCard}>
+          <View style={[
+            styles.guideCard,
+            {
+              backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
+              borderColor: isDark ? '#2D3748' : '#E9ECEF'
+            }
+          ]}>
             <View style={styles.badgeContainer}>
-              <Text style={[styles.badge, { backgroundColor: '#FCE4D6', color: '#C65911' }]}>KÝ HIỆU THỦ NGỮ VSL</Text>
+              <Text style={[styles.badge, { backgroundColor: isDark ? '#5c2d1b' : '#FCE4D6', color: isDark ? '#fb923c' : '#C65911' }]}>KÝ HIỆU THỦ NGỮ VSL</Text>
             </View>
             <View style={styles.signHandMock}>
-              {/* Mô tả biểu trưng thủ ngữ vẽ dạng đơn giản */}
               <Text style={styles.handSymbol}>🤟</Text>
             </View>
-            <Text style={styles.instructionText}>{signInstruction}</Text>
+            <Text style={[styles.instructionText, { color: isDark ? COLORS.textDark : COLORS.text }]}>{signInstruction}</Text>
           </View>
         ) : null}
       </View>
@@ -135,17 +147,14 @@ export const SignLanguage: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#F8F9FA',
     borderRadius: 24,
     padding: 20,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
     marginVertical: 12,
   },
   title: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: COLORS.muted,
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -156,11 +165,9 @@ const styles = StyleSheet.create({
   },
   guideCard: {
     flex: 1,
-    backgroundColor: COLORS.cardBg,
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
     alignItems: 'center',
   },
   badgeContainer: {
@@ -191,7 +198,6 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     fontSize: 13,
-    color: COLORS.text,
     textAlign: 'center',
     lineHeight: 18,
     marginTop: 6,

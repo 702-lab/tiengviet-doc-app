@@ -1,28 +1,31 @@
 import * as Speech from 'expo-speech';
 
 /**
- * Phát âm một chuỗi chữ sử dụng Speech TTS của hệ thống
+ * Phát âm một chuỗi chữ sử dụng Speech TTS của hệ thống với giọng vùng miền chỉ định
  * Trả về một Promise giải quyết khi phát âm xong hoặc bị dừng
  */
-export function speakAsync(text: string, rate: number): Promise<void> {
+export function speakAsync(text: string, rate: number, voice?: string): Promise<void> {
   return new Promise((resolve) => {
-    // Thử dừng các âm thanh đang phát trước đó
     Speech.stop().then(() => {
-      // expo-speech rate chuẩn thường từ 0.5 đến 2.0. 
-      // Đối với trẻ em, ta nên điều chỉnh giọng nói rõ ràng, tốc độ vừa phải.
-      Speech.speak(text, {
+      const options: Speech.SpeechOptions = {
         language: 'vi-VN',
         rate: rate,
-        pitch: 1.05, // Pitch cao hơn một chút giúp giọng nói trong trẻo thân thiện với trẻ em hơn
+        pitch: 1.05,
         onDone: () => resolve(),
         onError: (error) => {
           console.warn('Lỗi phát âm TTS:', error);
-          resolve(); // Vẫn resolve để tránh treo luồng
+          resolve();
         },
         onStopped: () => {
           resolve();
         }
-      });
+      };
+
+      if (voice) {
+        options.voice = voice;
+      }
+
+      Speech.speak(text, options);
     }).catch(() => {
       resolve();
     });

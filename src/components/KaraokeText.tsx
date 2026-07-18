@@ -4,7 +4,8 @@ import { useReader } from '../context/ReaderContext';
 import { COLORS } from '../theme/colors';
 
 export const KaraokeText: React.FC = () => {
-  const { tokens, activeTokenId, activeStepIndex, mode, wordAssessment } = useReader();
+  const { tokens, activeTokenId, activeStepIndex, mode, wordAssessment, theme } = useReader();
+  const isDark = theme === 'dark';
 
   // Hàm hiển thị chữ cái đang được đánh vần trực tiếp trên từ đó
   const renderWordToken = (token: any) => {
@@ -19,12 +20,17 @@ export const KaraokeText: React.FC = () => {
             key={token.id} 
             style={[
               styles.assessedWordContainer, 
-              isCorrect ? styles.correctWord : styles.incorrectWord
+              isCorrect ? styles.correctWord : styles.incorrectWord,
+              { borderColor: isCorrect ? (isDark ? '#1b5e20' : '#A5D6A7') : (isDark ? '#b71c1c' : '#EF9A9A') }
             ]}
           >
             <Text style={[
               styles.normalWord, 
-              { color: isCorrect ? '#2E7D32' : '#C62828', marginHorizontal: 0, paddingVertical: 0 }
+              { 
+                color: isCorrect ? (isDark ? '#81c784' : '#2E7D32') : (isDark ? '#e57373' : '#C62828'), 
+                marginHorizontal: 0, 
+                paddingVertical: 0 
+              }
             ]}>
               {token.text}
             </Text>
@@ -32,7 +38,7 @@ export const KaraokeText: React.FC = () => {
         );
       }
       return (
-        <Text key={token.id} style={styles.normalWord}>
+        <Text key={token.id} style={[styles.normalWord, { color: isDark ? COLORS.textDark : COLORS.text }]}>
           {token.text}
         </Text>
       );
@@ -65,8 +71,8 @@ export const KaraokeText: React.FC = () => {
       rhymePart = originalText.slice(onsetLen);
     }
 
-    let onsetColor = COLORS.text;
-    let rhymeColor = COLORS.text;
+    let onsetColor = isDark ? COLORS.textDark : COLORS.text;
+    let rhymeColor = isDark ? COLORS.textDark : COLORS.text;
     let onsetWeight: 'normal' | 'bold' = 'normal';
     let rhymeWeight: 'normal' | 'bold' = 'normal';
 
@@ -87,7 +93,7 @@ export const KaraokeText: React.FC = () => {
         break;
       case 'tone':
         rhymeColor = COLORS.tone;
-        onsetColor = COLORS.text;
+        onsetColor = isDark ? COLORS.textDark : COLORS.text;
         onsetWeight = 'bold';
         rhymeWeight = 'bold';
         break;
@@ -114,14 +120,20 @@ export const KaraokeText: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container, 
+      { 
+        backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
+        borderColor: isDark ? '#2D3748' : COLORS.border
+      }
+    ]}>
       <View style={styles.textWrapper}>
         {tokens.map((token) => {
           if (token.isWord) {
             return renderWordToken(token);
           } else {
             return (
-              <Text key={token.id} style={styles.punctuation}>
+              <Text key={token.id} style={[styles.punctuation, { color: isDark ? '#718096' : COLORS.muted }]}>
                 {token.text}
               </Text>
             );
@@ -135,11 +147,9 @@ export const KaraokeText: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.cardBg,
     borderRadius: 24,
     padding: 20,
     borderWidth: 2,
-    borderColor: COLORS.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -155,7 +165,6 @@ const styles = StyleSheet.create({
   },
   normalWord: {
     fontSize: 28,
-    color: COLORS.text,
     fontFamily: 'System',
     marginHorizontal: 2,
     paddingVertical: 4,
@@ -163,7 +172,6 @@ const styles = StyleSheet.create({
   },
   punctuation: {
     fontSize: 28,
-    color: COLORS.muted,
     fontFamily: 'System',
   },
   activeWordContainer: {
@@ -197,11 +205,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   correctWord: {
-    backgroundColor: '#E8F5E9',
-    borderColor: '#A5D6A7',
+    backgroundColor: 'rgba(74, 222, 128, 0.15)',
   },
   incorrectWord: {
-    backgroundColor: '#FFEBEE',
-    borderColor: '#EF9A9A',
+    backgroundColor: 'rgba(248, 113, 113, 0.15)',
   },
 });

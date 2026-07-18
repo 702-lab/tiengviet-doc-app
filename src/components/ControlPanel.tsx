@@ -4,14 +4,21 @@ import { useReader } from '../context/ReaderContext';
 import { COLORS } from '../theme/colors';
 
 export const ControlPanel: React.FC = () => {
-  const { isPlaying, play, pause, stop, speed, setSpeed, mode, setMode } = useReader();
+  const { isPlaying, play, pause, stop, speed, setSpeed, mode, setMode, theme, dialect, setDialect } = useReader();
+  const isDark = theme === 'dark';
 
   const speedOptions = [0.5, 0.8, 1.0, 1.2];
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      {
+        backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
+        borderColor: isDark ? '#2D3748' : COLORS.border
+      }
+    ]}>
       {/* Hàng 1: Chuyển đổi chế độ đọc */}
-      <View style={styles.modeRow}>
+      <View style={[styles.modeRow, { backgroundColor: isDark ? '#16161a' : '#F1F3F5' }]}>
         <TouchableOpacity
           style={[styles.modeButton, mode === 'spell' && styles.activeModeButton]}
           onPress={() => setMode('spell')}
@@ -35,11 +42,17 @@ export const ControlPanel: React.FC = () => {
       {/* Hàng 2: Điều khiển phát & dừng */}
       <View style={styles.playbackRow}>
         <TouchableOpacity 
-          style={styles.stopButton} 
+          style={[
+            styles.stopButton,
+            {
+              backgroundColor: isDark ? '#2D3748' : '#F8F9FA',
+              borderColor: isDark ? '#4A5568' : COLORS.border
+            }
+          ]} 
           onPress={stop}
           activeOpacity={0.7}
         >
-          <Text style={styles.stopButtonText}>⏹️ Dừng lại</Text>
+          <Text style={[styles.stopButtonText, { color: isDark ? COLORS.textDark : COLORS.text }]}>⏹️ Dừng lại</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -53,10 +66,57 @@ export const ControlPanel: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Hàng 3: Tốc độ đọc */}
-      <View style={styles.speedRow}>
-        <Text style={styles.speedLabel}>Tốc độ đọc:</Text>
-        <View style={styles.speedOptionsContainer}>
+      {/* Hàng 3: Chọn giọng đọc vùng miền */}
+      <View style={styles.optionRow}>
+        <Text style={[styles.optionLabel, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Giọng đọc vùng miền:</Text>
+        <View style={styles.optionsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.optButton, 
+              dialect === 'north' && styles.activeOpt,
+              {
+                backgroundColor: isDark ? '#2D3748' : '#F8F9FA',
+                borderColor: isDark ? '#4A5568' : COLORS.border
+              }
+            ]}
+            onPress={() => setDialect('north')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.optText, 
+              dialect === 'north' && styles.activeOptText,
+              { color: isDark ? COLORS.textDark : COLORS.text }
+            ]}>
+               miền Bắc
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.optButton, 
+              dialect === 'south' && styles.activeOpt,
+              {
+                backgroundColor: isDark ? '#2D3748' : '#F8F9FA',
+                borderColor: isDark ? '#4A5568' : COLORS.border
+              }
+            ]}
+            onPress={() => setDialect('south')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.optText, 
+              dialect === 'south' && styles.activeOptText,
+              { color: isDark ? COLORS.textDark : COLORS.text }
+            ]}>
+               miền Nam
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Hàng 4: Tốc độ đọc */}
+      <View style={[styles.optionRow, { marginTop: 16 }]}>
+        <Text style={[styles.optionLabel, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Tốc độ đọc:</Text>
+        <View style={styles.optionsContainer}>
           {speedOptions.map((opt) => {
             const isActive = speed === opt;
             let speedText = `${opt}x`;
@@ -65,11 +125,22 @@ export const ControlPanel: React.FC = () => {
             return (
               <TouchableOpacity
                 key={opt}
-                style={[styles.speedOptButton, isActive && styles.activeSpeedOpt]}
+                style={[
+                  styles.optButton, 
+                  isActive && styles.activeOpt,
+                  {
+                    backgroundColor: isDark ? '#2D3748' : '#F8F9FA',
+                    borderColor: isDark ? '#4A5568' : COLORS.border
+                  }
+                ]}
                 onPress={() => setSpeed(opt)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.speedOptText, isActive && styles.activeSpeedOptText]}>
+                <Text style={[
+                  styles.optText, 
+                  isActive && styles.activeOptText,
+                  { color: isDark ? COLORS.textDark : COLORS.text }
+                ]}>
                   {speedText}
                 </Text>
               </TouchableOpacity>
@@ -83,11 +154,9 @@ export const ControlPanel: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.cardBg,
     borderRadius: 24,
     padding: 16,
     borderWidth: 2,
-    borderColor: COLORS.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -97,7 +166,6 @@ const styles = StyleSheet.create({
   },
   modeRow: {
     flexDirection: 'row',
-    backgroundColor: '#F1F3F5',
     borderRadius: 16,
     padding: 4,
     marginBottom: 16,
@@ -120,7 +188,6 @@ const styles = StyleSheet.create({
   modeText: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: COLORS.muted,
   },
   activeModeText: {
     color: '#FFFFFF',
@@ -132,9 +199,7 @@ const styles = StyleSheet.create({
   },
   stopButton: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
     borderWidth: 1.5,
-    borderColor: COLORS.border,
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
@@ -143,7 +208,6 @@ const styles = StyleSheet.create({
   stopButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.text,
   },
   playButton: {
     flex: 2,
@@ -168,40 +232,38 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
-  speedRow: {
+  optionRow: {
     alignItems: 'flex-start',
+    width: '100%',
   },
-  speedLabel: {
+  optionLabel: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: COLORS.muted,
     marginBottom: 8,
   },
-  speedOptionsContainer: {
+  optionsContainer: {
     flexDirection: 'row',
     width: '100%',
     gap: 6,
   },
-  speedOptButton: {
+  optButton: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: 10,
     paddingVertical: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  activeSpeedOpt: {
+  activeOpt: {
     backgroundColor: COLORS.accent,
     borderColor: COLORS.primary,
   },
-  speedOptText: {
+  optText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.text,
   },
-  activeSpeedOptText: {
-    color: COLORS.text,
+  activeOptText: {
     fontWeight: 'bold',
+    color: COLORS.text,
   },
 });

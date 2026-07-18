@@ -11,8 +11,10 @@ export const PracticePanel: React.FC = () => {
     assessmentScore, 
     startRecording, 
     stopRecordingAndAssess, 
-    clearAssessment 
+    clearAssessment,
+    theme
   } = useReader();
+  const isDark = theme === 'dark';
 
   const getStars = (score: number) => {
     if (score === 100) return '⭐⭐⭐⭐⭐';
@@ -29,14 +31,22 @@ export const PracticePanel: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>🎙️ Luyện Phát Âm (AI STT)</Text>
+    <View style={[
+      styles.container,
+      {
+        backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
+        borderColor: isDark ? '#2D3748' : COLORS.border
+      }
+    ]}>
+      <Text style={[styles.title, { color: isDark ? COLORS.textDark : COLORS.text }]}>🎙️ Luyện Phát Âm (AI STT)</Text>
 
       {/* TH 1: Đang trong quá trình ghi âm */}
       {isRecording && (
         <View style={styles.stateContainer}>
           <View style={styles.pulseIndicator} />
-          <Text style={styles.stateText}>Bé hãy nhìn vào chữ phía trên và đọc to lên nhé...</Text>
+          <Text style={[styles.stateText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            Bé hãy nhìn vào chữ phía trên và đọc to lên nhé...
+          </Text>
           <TouchableOpacity 
             style={[styles.actionBtn, styles.stopRecBtn]} 
             onPress={stopRecordingAndAssess}
@@ -51,7 +61,9 @@ export const PracticePanel: React.FC = () => {
       {isAssessing && (
         <View style={styles.stateContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
-          <Text style={styles.stateText}>Trí tuệ nhân tạo đang phân tích giọng đọc...</Text>
+          <Text style={[styles.stateText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            Trí tuệ nhân tạo đang phân tích giọng đọc...
+          </Text>
         </View>
       )}
 
@@ -59,15 +71,24 @@ export const PracticePanel: React.FC = () => {
       {wordAssessment !== null && assessmentScore !== null && (
         <View style={styles.resultContainer}>
           <Text style={styles.starsText}>{getStars(assessmentScore)}</Text>
-          <Text style={styles.scoreText}>Điểm chính xác: {assessmentScore}%</Text>
+          <Text style={[styles.scoreText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            Điểm chính xác: {assessmentScore}%
+          </Text>
           <Text style={styles.messageText}>{getMessage(assessmentScore)}</Text>
           
           <TouchableOpacity 
-            style={[styles.actionBtn, styles.resetBtn]} 
+            style={[
+              styles.actionBtn, 
+              styles.resetBtn,
+              {
+                backgroundColor: isDark ? '#2D3748' : '#F1F3F5',
+                borderColor: isDark ? '#4A5568' : COLORS.border
+              }
+            ]} 
             onPress={clearAssessment}
             activeOpacity={0.8}
           >
-            <Text style={styles.resetBtnText}>🔄 Luyện đọc lại</Text>
+            <Text style={[styles.resetBtnText, { color: isDark ? COLORS.textDark : COLORS.text }]}>🔄 Luyện đọc lại</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -75,7 +96,7 @@ export const PracticePanel: React.FC = () => {
       {/* TH 4: Trạng thái chờ bắt đầu luyện đọc */}
       {!isRecording && !isAssessing && wordAssessment === null && (
         <View style={styles.idleContainer}>
-          <Text style={styles.infoText}>
+          <Text style={[styles.infoText, { color: isDark ? '#718096' : COLORS.muted }]}>
             Bé hãy tự đọc đoạn văn trên. Hệ thống sẽ lắng nghe và tô màu xanh/đỏ cho các từ bé đọc đúng/sai!
           </Text>
           <TouchableOpacity 
@@ -93,11 +114,9 @@ export const PracticePanel: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.cardBg,
     borderRadius: 24,
     padding: 16,
     borderWidth: 2,
-    borderColor: COLORS.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -108,7 +127,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: COLORS.text,
     marginBottom: 12,
     letterSpacing: 0.5,
   },
@@ -126,7 +144,6 @@ const styles = StyleSheet.create({
   },
   stateText: {
     fontSize: 14,
-    color: COLORS.text,
     textAlign: 'center',
     marginBottom: 16,
     fontWeight: '600',
@@ -162,7 +179,6 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 13,
-    color: COLORS.muted,
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 16,
@@ -179,7 +195,6 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.text,
     marginBottom: 6,
   },
   messageText: {
@@ -190,12 +205,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   resetBtn: {
-    backgroundColor: '#F1F3F5',
     borderWidth: 1.5,
-    borderColor: COLORS.border,
   },
   resetBtnText: {
-    color: COLORS.text,
     fontSize: 15,
     fontWeight: 'bold',
   },
