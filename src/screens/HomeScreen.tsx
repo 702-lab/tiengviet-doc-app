@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useReader } from '../context/ReaderContext';
+import { loadCustomPassages, saveCustomPassages } from '../services/storage';
 import { COLORS } from '../theme/colors';
 
 const SAMPLE_TEXTS = [
@@ -25,16 +26,53 @@ interface HomeScreenProps {
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) => {
   const { setText, theme, toggleTheme } = useReader();
   const [inputVal, setInputVal] = useState('');
+  const [customPassages, setCustomPassages] = useState<string[]>([]);
   const isDark = theme === 'dark';
 
-  const handleStartReading = (customText?: string) => {
+  // Nạp danh sách bài tập đọc phụ huynh đã soạn từ trước
+  useEffect(() => {
+    loadCustomPassages().then(setCustomPassages).catch((err) => {
+      console.warn('Lỗi nạp bài đọc tự soạn:', err);
+    });
+  }, []);
+
+  const handleStartReading = async (customText?: string) => {
     const textToRead = customText || inputVal;
     if (!textToRead.trim()) {
       Alert.alert('Thông báo', 'Vui lòng nhập hoặc chọn một đoạn văn trước khi bắt đầu!');
       return;
     }
+
+    // Nếu phụ huynh tự gõ văn bản mới (không trùng bài mẫu sẵn)
+    if (!customText && !SAMPLE_TEXTS.some(s => s.text === textToRead)) {
+      if (!customPassages.includes(textToRead)) {
+        const updated = [textToRead, ...customPassages];
+        setCustomPassages(updated);
+        await saveCustomPassages(updated);
+      }
+    }
+
     setText(textToRead);
     onNavigateToReader();
+  };
+
+  const handleDeletePassage = (indexToDelete: number) => {
+    Alert.alert(
+      'Xác nhận xóa',
+      'Bạn có chắc muốn xóa bài tập đọc tự soạn này không?',
+      [
+        { text: 'Hủy bỏ', style: 'cancel' },
+        {
+          text: 'Xóa bài',
+          style: 'destructive',
+          onPress: async () => {
+            const updated = customPassages.filter((_, idx) => idx !== indexToDelete);
+            setCustomPassages(updated);
+            await saveCustomPassages(updated);
+          }
+        }
+      ]
+    );
   };
 
   const handleOcrMock = () => {
@@ -60,7 +98,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.container, { backgroundColor: isDark ? COLORS.darkBackground : COLORS.background }]}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Nút bật/tắt theme nổi trên góc */}
         <View style={styles.themeToggleContainer}>
           <TouchableOpacity 
@@ -68,7 +106,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
             onPress={toggleTheme}
             activeOpacity={0.7}
           >
-            <Text style={styles.themeBtnText}>{isDark ? '☀️ Sáng' : '🌙 Tối'}</Text>
+            <Text style={[styles.themeBtnText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+              {isDark ? '☀️ Sáng' : '🌙 Tối'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -133,6 +173,45 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
           </View>
         </View>
 
+        {/* Danh sách bài tập đọc tự soạn */}
+        {customPassages.length > 0 && (
+          <View style={styles.samplesSection}>
+            <Text style={[styles.sectionTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>Bài tự soạn của ba mẹ:</Text>
+            {customPassages.map((passage, idx) => (
+              <View 
+                key={idx}
+                style={[
+                  styles.passageContainer,
+                  {
+                    backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
+                    borderColor: isDark ? '#2D3748' : COLORS.border
+                  }
+                ]}
+              >
+                <TouchableOpacity
+                  style={styles.passageTextBtn}
+                  onPress={() => handleStartReading(passage)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.passageTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+                    📝 Bài tự soạn {customPassages.length - idx}
+                  </Text>
+                  <Text style={[styles.sampleSnippet, { color: isDark ? '#A0AEC0' : COLORS.muted }]} numberOfLines={1}>
+                    {passage}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteBtn}
+                  onPress={() => handleDeletePassage(idx)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteBtnText}>🗑️</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Đoạn văn mẫu gợi ý */}
         <View style={styles.samplesSection}>
           <Text style={[styles.sectionTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>Chọn nhanh bài mẫu:</Text>
@@ -183,7 +262,6 @@ const styles = StyleSheet.create({
   themeBtnText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: COLORS.text,
   },
   header: {
     alignItems: 'center',
@@ -265,6 +343,7 @@ const styles = StyleSheet.create({
   },
   samplesSection: {
     marginTop: 8,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 16,
@@ -289,5 +368,39 @@ const styles = StyleSheet.create({
   },
   sampleSnippet: {
     fontSize: 13,
+  },
+  
+  // Custom passages list specific styling
+  passageContainer: {
+    flexDirection: 'row',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    marginBottom: 10,
+    alignItems: 'center',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  passageTextBtn: {
+    flex: 1,
+    padding: 16,
+  },
+  passageTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  deleteBtn: {
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(0,0,0,0.05)',
+  },
+  deleteBtnText: {
+    fontSize: 18,
   },
 });

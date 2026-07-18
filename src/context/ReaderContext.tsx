@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { Alert } from 'react-native';
 import { Token, tokenizeText, ParsedSyllable } from '../services/phonicsEngine';
 import { speakAsync, stopAllSpeech } from '../services/audioManager';
+import { loadSettings, saveSettings, saveSessionLog } from '../services/storage';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 
@@ -75,7 +76,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const recordingRef = useRef<Audio.Recording | null>(null);
 
-  // Refs tránh stale closure trong hàm async
+  // Refs tránh stale closure trong hàm phát nhạc
   const isPlayingRef = useRef(false);
   const tokensRef = useRef<Token[]>([]);
   const currentIndexRef = useRef(0);
@@ -83,15 +84,37 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const modeRef = useRef<'spell' | 'read'>('spell');
   const dialectRef = useRef<'north' | 'south'>('north');
   const loopActiveRef = useRef(false);
+  
+  // Tránh vòng lặp vô hạn khi lưu thiết lập lúc khởi động
+  const initialLoadDone = useRef(false);
 
-  // Lấy các giọng nói tiếng Việt hiện có trên máy khi khởi động
+  // Khởi chạy: Nạp cài đặt đã lưu
   useEffect(() => {
+    loadSettings().then((settings) => {
+      setTheme(settings.theme);
+      _setDialect(settings.dialect);
+      _setSpeed(settings.speed);
+      initialLoadDone.current = true;
+    }).catch((err) => {
+      console.warn('Lỗi nạp cài đặt:', err);
+      initialLoadDone.current = true;
+    });
+
     Speech.getAvailableVoicesAsync().then((voices) => {
       setAvailableVoices(voices.filter((v) => v.language.startsWith('vi')));
     }).catch((err) => {
       console.warn('Không lấy được danh sách giọng nói:', err);
     });
   }, []);
+
+  // Tự động lưu thiết lập khi có thay đổi
+  useEffect(() => {
+    if (initialLoadDone.current) {
+      saveSettings({ theme, dialect, speed }).catch(err => {
+        console.warn('Không thể lưu cài đặt:', err);
+      });
+    }
+  }, [theme, dialect, speed]);
 
   useEffect(() => {
     tokensRef.current = tokens;
@@ -107,7 +130,6 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     dialectRef.current = dialect;
-    // Khi đổi giọng miền Bắc/Nam, ta phân tách lại văn bản để cập nhật chính xác cách đánh vần
     if (text) {
       const newTokens = tokenizeText(text, dialect);
       setTokens(newTokens);
@@ -389,6 +411,20 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setWordAssessment(assessmentResult);
     setAssessmentScore(score);
     setIsAssessing(false);
+
+    // BÁO CÁO: Lưu kết quả luyện đọc của bé vào lịch sử
+    const missedWords = wordTokens
+      .filter(token => assessmentResult[token.id] === 'incorrect')
+      .map(token => token.text);
+
+    saveSessionLog({
+      date: new Date().toISOString(),
+      text,
+      score,
+      missedWords,
+    }).catch((err) => {
+      console.warn('Lỗi ghi lại lịch sử bài học:', err);
+    });
   };
 
   const clearAssessment = () => {
