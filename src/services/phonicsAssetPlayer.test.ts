@@ -1,10 +1,10 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { getAssetRelativePath, playPhonicAssetAsync } from './phonicsAssetPlayer';
-import * as FileSystem from 'expo-file-system/build/legacy/FileSystem';
+import * as FileSystem from 'expo-file-system/src/legacy/FileSystem';
 import { Audio } from 'expo-av';
 
-// Mock the exact legacy file path that the service imports
-vi.mock('expo-file-system/build/legacy/FileSystem', () => {
+// Mock the exact legacy file path that the service imports from source
+vi.mock('expo-file-system/src/legacy/FileSystem', () => {
   return {
     cacheDirectory: 'mock-cache://',
     getInfoAsync: vi.fn(async (uri: string) => {
@@ -61,16 +61,16 @@ describe('Phonics Asset Player Unit Tests', () => {
     expect(getAssetRelativePath('v', 'onset', 'south')).toBe('south/onsets/v.mp3');
     expect(getAssetRelativePath('r', 'onset', 'central')).toBe('central/onsets/r.mp3');
 
-    // 2. Rhymes (Now regionalized)
+    // 2. Rhymes
     expect(getAssetRelativePath('oang', 'rhyme', 'north')).toBe('north/rhymes/oang.mp3');
     expect(getAssetRelativePath('oang', 'rhyme', 'south')).toBe('south/rhymes/oang.mp3');
 
-    // 3. Tones (Now regionalized)
+    // 3. Tones
     expect(getAssetRelativePath('huyền', 'tone', 'north')).toBe('north/tones/huyen.mp3');
     expect(getAssetRelativePath('ngã', 'tone', 'south')).toBe('south/tones/nga.mp3');
     expect(getAssetRelativePath('hỏi', 'tone', 'central')).toBe('central/tones/hoi.mp3');
 
-    // 4. Combined / Words (Now regionalized)
+    // 4. Combined / Words
     expect(getAssetRelativePath('bàn', 'final', 'north')).toBe('north/words/ban.mp3');
     expect(getAssetRelativePath('bàn', 'final', 'south')).toBe('south/words/ban.mp3');
   });
