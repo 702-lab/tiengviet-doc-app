@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { Token, tokenizeText, ParsedSyllable } from '../services/phonicsEngine';
 import { speakAsync, stopAllSpeech } from '../services/audioManager';
 import { loadSettings, saveSettings, saveSessionLog } from '../services/storage';
+import { playPhonicAssetAsync } from '../services/phonicsAssetPlayer';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 
@@ -176,15 +177,13 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       );
       return south?.identifier;
     } else if (currentDialect === 'central') {
-      // Hệ điều hành di động thường không phân tách riêng voice miền Trung (Huế/Đà Nẵng).
-      // Chúng ta sẽ tìm kiếm giọng nói gắn thẻ central/hue nếu có, nếu không sẽ dùng giọng Bắc (chuẩn ngữ âm học của SGK)
       const central = availableVoices.find(v => 
         v.name.toLowerCase().includes('central') ||
         v.name.toLowerCase().includes('hue') ||
         v.name.toLowerCase().includes('danang')
       );
       if (central) return central.identifier;
-      return undefined; // Dùng giọng mặc định
+      return undefined;
     } else {
       const north = availableVoices.find(v => 
         v.name.toLowerCase().includes('north') || 
@@ -225,7 +224,14 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         if (modeRef.current === 'read') {
           setActiveStepIndex(-1);
-          await speakAsync(token.text, speedRef.current, voiceId);
+          // Thử phát bằng file âm thanh chất lượng cao (Solution A) trước
+          const playedAsset = await playPhonicAssetAsync(token.text, 'final', dialectRef.current);
+          
+          // Fallback về giọng đọc hệ thống nếu file chưa được đồng bộ hoặc offline
+          if (!playedAsset) {
+            await speakAsync(token.text, speedRef.current, voiceId);
+          }
+          
           if (!isPlayingRef.current) break;
           await delay(350 / speedRef.current);
         } else {
@@ -238,13 +244,24 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               
               setActiveStepIndex(stepIdx);
               const step = steps[stepIdx];
-              await speakAsync(step.speech, speedRef.current, voiceId);
+              
+              // Thử phát bằng file âm thanh chất lượng cao (Solution A) trước
+              const playedAsset = await playPhonicAssetAsync(step.text, step.type, dialectRef.current);
+              
+              // Fallback về giọng đọc hệ thống nếu file chưa được đồng bộ hoặc offline
+              if (!playedAsset) {
+                await speakAsync(step.speech, speedRef.current, voiceId);
+              }
+              
               if (!isPlayingRef.current) break;
               await delay(250 / speedRef.current);
             }
           } else {
             setActiveStepIndex(-1);
-            await speakAsync(token.text, speedRef.current, voiceId);
+            const playedAsset = await playPhonicAssetAsync(token.text, 'final', dialectRef.current);
+            if (!playedAsset) {
+              await speakAsync(token.text, speedRef.current, voiceId);
+            }
           }
           
           if (!isPlayingRef.current) break;
