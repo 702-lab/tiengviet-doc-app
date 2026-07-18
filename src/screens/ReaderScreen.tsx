@@ -196,9 +196,11 @@ const styles = StyleSheet.create({
   // Phần chữ lớn Karaoke được ghim cố định ở đỉnh màn hình
   pinnedTextCard: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingTop: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
+    minHeight: 140,
+    justifyContent: 'center',
   },
   
   // Tab Bar
