@@ -1,4 +1,4 @@
-import { cacheDirectory, getInfoAsync, makeDirectoryAsync, downloadAsync, deleteAsync } from 'expo-file-system/build/legacy/FileSystem';
+import { cacheDirectory, getInfoAsync, makeDirectoryAsync, downloadAsync, deleteAsync } from 'expo-file-system/src/legacy/FileSystem';
 import { Audio } from 'expo-av';
 
 const CDN_BASE_URL = 'https://raw.githubusercontent.com/702-lab/tiengviet-doc-app/main/assets/audio';
