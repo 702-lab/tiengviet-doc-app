@@ -17,6 +17,7 @@ export interface SessionLog {
 const SETTINGS_KEY = 'tiengviet_doc_settings';
 const PASSAGES_KEY = 'tiengviet_doc_passages';
 const HISTORY_KEY = 'tiengviet_doc_history';
+const ACHIEVEMENTS_KEY = 'tiengviet_doc_achievements';
 
 const DEFAULT_SETTINGS: AppSettings = {
   theme: 'light',
@@ -115,4 +116,80 @@ export async function clearSessionLogs(): Promise<void> {
   } catch (error) {
     console.error('Failed to clear session logs:', error);
   }
+}
+
+const SAMPLE_STORY_TEXTS = [
+  'Con mèo nhà em lông màu trắng muốt. Nó rất ngoan và thích bắt chuột.',
+  'Buổi sáng quê em gió mát rượi. Ông mặt trời đỏ rực nhô lên sau lũy tre làng.',
+  'Chú cá vàng bơi lội tung tăng trong bể nước. Vảy cá vàng óng lấp lánh như dát vàng.'
+];
+
+/**
+ * Gets the list of currently unlocked achievement IDs.
+ */
+export async function getUnlockedAchievements(): Promise<string[]> {
+  try {
+    const data = await AsyncStorage.getItem(ACHIEVEMENTS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Failed to load achievements:', error);
+    return [];
+  }
+}
+
+/**
+ * Saves the list of unlocked achievement IDs.
+ */
+export async function saveUnlockedAchievements(ids: string[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(ids));
+  } catch (error) {
+    console.error('Failed to save achievements:', error);
+  }
+}
+
+/**
+ * Clears all unlocked achievements (useful for resetting).
+ */
+export async function clearUnlockedAchievements(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(ACHIEVEMENTS_KEY);
+  } catch (error) {
+    console.error('Failed to clear achievements:', error);
+  }
+}
+
+/**
+ * Analyzes session logs to see if new achievements are unlocked.
+ * Returns the list of newly unlocked achievement IDs.
+ */
+export async function checkAndUnlockAchievements(logs: SessionLog[]): Promise<string[]> {
+  const alreadyUnlocked = await getUnlockedAchievements();
+  const newUnlocked: string[] = [];
+
+  // 1. Chăm Chỉ: Hoàn thành 5 lượt tập đọc bài
+  if (logs.length >= 5 && !alreadyUnlocked.includes('badge_cham_chi')) {
+    newUnlocked.push('badge_cham_chi');
+  }
+
+  // 2. Phát Âm Chuẩn: Đạt điểm chính xác 100% trong 3 bài đọc
+  const perfectCount = logs.filter(log => log.score === 100).length;
+  if (perfectCount >= 3 && !alreadyUnlocked.includes('badge_phat_am_chuan')) {
+    newUnlocked.push('badge_phat_am_chuan');
+  }
+
+  // 3. Vua Đánh Vần: Đọc đúng cả 3 bài mẫu của ứng dụng (score >= 80)
+  const readSamples = SAMPLE_STORY_TEXTS.filter(sampleText => {
+    return logs.some(log => log.text.trim() === sampleText.trim() && log.score >= 80);
+  });
+  if (readSamples.length >= 3 && !alreadyUnlocked.includes('badge_vua_danh_van')) {
+    newUnlocked.push('badge_vua_danh_van');
+  }
+
+  if (newUnlocked.length > 0) {
+    const updatedList = [...alreadyUnlocked, ...newUnlocked];
+    await saveUnlockedAchievements(updatedList);
+  }
+
+  return newUnlocked;
 }

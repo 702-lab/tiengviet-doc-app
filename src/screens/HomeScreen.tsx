@@ -11,7 +11,8 @@ import {
   Alert
 } from 'react-native';
 import { useReader } from '../context/ReaderContext';
-import { loadCustomPassages, saveCustomPassages, loadSessionLogs, clearSessionLogs, SessionLog } from '../services/storage';
+import { loadCustomPassages, saveCustomPassages, loadSessionLogs, clearSessionLogs, getUnlockedAchievements, clearUnlockedAchievements, SessionLog } from '../services/storage';
+import { ACHIEVEMENTS } from '../theme/achievements';
 import { COLORS } from '../theme/colors';
 
 const SAMPLE_STORIES = [
@@ -30,6 +31,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
   const [customPassages, setCustomPassages] = useState<string[]>([]);
   const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
   
   // Trạng thái nhấn nút 3D (Duolingo style)
   const [isPlayPressed, setIsPlayPressed] = useState(false);
@@ -41,6 +43,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
   useEffect(() => {
     loadCustomPassages().then(setCustomPassages);
     loadSessionLogs().then(setSessionLogs);
+    getUnlockedAchievements().then(setUnlockedBadges);
   }, []);
 
   const handleStartPlay = (textToPlay: string) => {
@@ -85,7 +88,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
   const handleClearHistory = () => {
     Alert.alert(
       'Xóa lịch sử',
-      'Bố mẹ có chắc chắn muốn xóa toàn bộ học bạ của bé không? Hành động này không thể hoàn tác.',
+      'Bố mẹ có chắc chắn muốn xóa toàn bộ học bạ và huy chương của bé không? Hành động này không thể hoàn tác.',
       [
         { text: 'Hủy', style: 'cancel' },
         {
@@ -93,8 +96,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
           style: 'destructive',
           onPress: async () => {
             await clearSessionLogs();
+            await clearUnlockedAchievements();
             setSessionLogs([]);
-            Alert.alert('Thành công', 'Đã xóa toàn bộ lịch sử học tập.');
+            setUnlockedBadges([]);
+            Alert.alert('Thành công', 'Đã xóa toàn bộ lịch sử học tập và huy chương.');
           }
         }
       ]
@@ -250,6 +255,52 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
               </View>
             </View>
           )}
+
+          {/* Huy chương học tập */}
+          <Text style={[styles.badgeSectionTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            🏅 Huy chương học tập
+          </Text>
+          <View style={styles.badgeListContainer}>
+            {ACHIEVEMENTS.map((badge) => {
+              const isUnlocked = unlockedBadges.includes(badge.id);
+              return (
+                <View 
+                  key={badge.id}
+                  style={[
+                    styles.badgeCardRow,
+                    {
+                      backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+                      borderColor: isUnlocked 
+                        ? COLORS.primary 
+                        : (isDark ? COLORS.borderDark : COLORS.border),
+                      borderBottomColor: isUnlocked
+                        ? COLORS.primaryShadow
+                        : (isDark ? '#162228' : '#D5D5D5'),
+                      opacity: isUnlocked ? 1 : 0.5,
+                    }
+                  ]}
+                >
+                  <View style={[
+                    styles.badgeIconWrapper,
+                    { 
+                      backgroundColor: isUnlocked ? '#EFFFDF' : (isDark ? COLORS.bgDark : '#F1F3F5'),
+                      borderColor: isUnlocked ? COLORS.primary : (isDark ? COLORS.borderDark : '#E5E5E5'),
+                    }
+                  ]}>
+                    <Text style={styles.badgeIconText}>{badge.icon}</Text>
+                  </View>
+                  <View style={styles.badgeTextWrapper}>
+                    <Text style={[styles.badgeTitleText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+                      {badge.title} {isUnlocked ? '✓' : ''}
+                    </Text>
+                    <Text style={[styles.badgeDescText, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}>
+                      {badge.description}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
 
           {totalSessions === 0 && (
             <View style={[styles.remedialBox, { borderColor: isDark ? COLORS.borderDark : COLORS.border, borderStyle: 'dashed', borderWidth: 2, padding: 12, borderRadius: 14, marginTop: 12 }]}>
@@ -641,5 +692,47 @@ const styles = StyleSheet.create({
   },
   deleteBtnText: {
     fontSize: 16,
+  },
+  badgeSectionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    marginTop: 18,
+    marginBottom: 8,
+  },
+  badgeListContainer: {
+    gap: 8,
+    marginBottom: 12,
+    width: '100%',
+  },
+  badgeCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderBottomWidth: 4,
+    padding: 10,
+    gap: 12,
+  },
+  badgeIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+  },
+  badgeIconText: {
+    fontSize: 20,
+  },
+  badgeTextWrapper: {
+    flex: 1,
+  },
+  badgeTitleText: {
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  badgeDescText: {
+    fontSize: 11,
   },
 });

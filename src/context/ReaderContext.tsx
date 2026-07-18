@@ -2,8 +2,9 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { Alert } from 'react-native';
 import { Token, tokenizeText, ParsedSyllable } from '../services/phonicsEngine';
 import { speakAsync, stopAllSpeech } from '../services/audioManager';
-import { loadSettings, saveSettings, saveSessionLog } from '../services/storage';
+import { loadSettings, saveSettings, saveSessionLog, checkAndUnlockAchievements } from '../services/storage';
 import { playPhonicAssetAsync } from '../services/phonicsAssetPlayer';
+import { Achievement, ACHIEVEMENTS } from '../theme/achievements';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 
@@ -41,6 +42,10 @@ interface ReaderContextType {
   // Giọng đọc vùng miền (Northern/Southern/Central Dialect)
   dialect: 'north' | 'south' | 'central';
   setDialect: (dialect: 'north' | 'south' | 'central') => void;
+
+  // Thành tựu / Huy chương
+  unlockedBadge: Achievement | null;
+  clearUnlockedBadge: () => void;
 }
 
 const ReaderContext = createContext<ReaderContextType | undefined>(undefined);
@@ -73,6 +78,10 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Theme sáng/tối
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  // Trạng thái huy chương vừa mở khóa
+  const [unlockedBadge, setUnlockedBadge] = useState<Achievement | null>(null);
+  const clearUnlockedBadge = () => setUnlockedBadge(null);
 
   // Giọng đọc miền Bắc/Nam/Trung
   const [dialect, _setDialect] = useState<'north' | 'south' | 'central'>('north');
@@ -474,6 +483,16 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       text,
       score,
       missedWords,
+    }).then(async (updatedLogs) => {
+      // Tự động kiểm tra và mở khóa huy chương mới
+      const newlyUnlockedIds = await checkAndUnlockAchievements(updatedLogs);
+      if (newlyUnlockedIds.length > 0) {
+        const firstUnlockedBadgeId = newlyUnlockedIds[0];
+        const badge = ACHIEVEMENTS.find(a => a.id === firstUnlockedBadgeId);
+        if (badge) {
+          setUnlockedBadge(badge);
+        }
+      }
     }).catch((err) => {
       console.warn('Lỗi ghi lại lịch sử bài học:', err);
     });
@@ -529,6 +548,9 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         dialect,
         setDialect,
+
+        unlockedBadge,
+        clearUnlockedBadge,
       }}
     >
       {children}

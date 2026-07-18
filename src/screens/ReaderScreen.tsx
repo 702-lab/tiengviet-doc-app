@@ -6,6 +6,7 @@ import { VisualPhonics } from '../components/VisualPhonics';
 import { SignLanguage } from '../components/SignLanguage';
 import { ControlPanel } from '../components/ControlPanel';
 import { PracticePanel } from '../components/PracticePanel';
+import { Celebration } from '../components/Celebration';
 import { COLORS } from '../theme/colors';
 
 // Bật LayoutAnimation cho Android
@@ -18,8 +19,9 @@ interface ReaderScreenProps {
 }
 
 export const ReaderScreen: React.FC<ReaderScreenProps> = ({ onNavigateToHome }) => {
-  const { tokens, activeTokenId, theme, stop } = useReader();
+  const { tokens, activeTokenId, theme, stop, unlockedBadge, clearUnlockedBadge } = useReader();
   const [activeTab, setActiveTab] = useState<'practice' | 'phonics' | 'visual'>('practice');
+  const [pressedModalBtn, setPressedModalBtn] = useState(false);
   const isDark = theme === 'dark';
 
   const handleBack = () => {
@@ -149,6 +151,47 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({ onNavigateToHome }) 
 
         {activeTab === 'visual' && <SignLanguage />}
       </ScrollView>
+
+      {/* Pop-up mở khóa Huy Chương Mới (Duolingo Style) */}
+      {unlockedBadge && (
+        <View style={styles.modalOverlay}>
+          <Celebration />
+          <View style={[
+            styles.modalCard,
+            { 
+              backgroundColor: isDark ? COLORS.cardBgDark : '#FFFFFF',
+              borderColor: isDark ? COLORS.borderDark : COLORS.border,
+            }
+          ]}>
+            <Text style={styles.modalBadgeIcon}>{unlockedBadge.icon}</Text>
+            <Text style={[styles.modalTitle, { color: COLORS.primary }]}>🏆 HUY CHƯƠNG MỚI!</Text>
+            <Text style={[styles.modalBadgeName, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+              {unlockedBadge.title}
+            </Text>
+            <Text style={[styles.modalBadgeDesc, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}>
+              {unlockedBadge.description}
+            </Text>
+
+            <TouchableOpacity
+              activeOpacity={1}
+              onPressIn={() => setPressedModalBtn(true)}
+              onPressOut={() => setPressedModalBtn(false)}
+              onPress={clearUnlockedBadge}
+              style={[
+                styles.modalOkBtn,
+                {
+                  backgroundColor: COLORS.primary,
+                  borderBottomColor: COLORS.primaryShadow,
+                  transform: [{ translateY: pressedModalBtn ? 2 : 0 }],
+                  borderBottomWidth: pressedModalBtn ? 1 : 4,
+                }
+              ]}
+            >
+              <Text style={styles.modalOkBtnText}>TUYỆT VỜI! 🦉</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -254,5 +297,64 @@ const styles = StyleSheet.create({
     height: 2,
     marginVertical: 12,
     width: '100%',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  modalCard: {
+    width: '85%',
+    borderRadius: 28,
+    borderWidth: 2,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 5,
+  },
+  modalBadgeIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+  },
+  modalBadgeName: {
+    fontSize: 22,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  modalBadgeDesc: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 24,
+  },
+  modalOkBtn: {
+    width: '100%',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalOkBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0.8,
   },
 });

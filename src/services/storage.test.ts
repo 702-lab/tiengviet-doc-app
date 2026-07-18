@@ -7,6 +7,9 @@ import {
   saveSessionLog, 
   loadSessionLogs,
   clearSessionLogs,
+  getUnlockedAchievements,
+  clearUnlockedAchievements,
+  checkAndUnlockAchievements,
   AppSettings,
   SessionLog
 } from './storage';
@@ -124,5 +127,90 @@ describe('Storage Service Unit Tests', () => {
     await clearSessionLogs();
     const fetchedAfter = await loadSessionLogs();
     expect(fetchedAfter).toEqual([]);
+  });
+
+  describe('Gamified Achievements Milestone Logic', () => {
+    it('should unlock Chăm Chỉ badge when logs reach 5 sessions', async () => {
+      const logs: SessionLog[] = Array.from({ length: 5 }, (_, i) => ({
+        id: `log-${i}`,
+        date: new Date().toISOString(),
+        text: `story-${i}`,
+        score: 70,
+        missedWords: [],
+      }));
+
+      const newlyUnlocked = await checkAndUnlockAchievements(logs);
+      expect(newlyUnlocked).toContain('badge_cham_chi');
+      expect(newlyUnlocked).not.toContain('badge_phat_am_chuan');
+
+      const allUnlocked = await getUnlockedAchievements();
+      expect(allUnlocked).toEqual(['badge_cham_chi']);
+    });
+
+    it('should unlock Phát Âm Chuẩn badge when perfect logs count is 3', async () => {
+      const logs: SessionLog[] = [
+        { id: '1', date: new Date().toISOString(), text: 't1', score: 100, missedWords: [] },
+        { id: '2', date: new Date().toISOString(), text: 't2', score: 100, missedWords: [] },
+        { id: '3', date: new Date().toISOString(), text: 't3', score: 100, missedWords: [] },
+      ];
+
+      const newlyUnlocked = await checkAndUnlockAchievements(logs);
+      expect(newlyUnlocked).toContain('badge_phat_am_chuan');
+
+      const allUnlocked = await getUnlockedAchievements();
+      expect(allUnlocked).toEqual(['badge_phat_am_chuan']);
+    });
+
+    it('should unlock Vua Đánh Vần badge when all 3 sample stories are read with score >= 80', async () => {
+      const logs: SessionLog[] = [
+        {
+          id: '1',
+          date: new Date().toISOString(),
+          text: 'Con mèo nhà em lông màu trắng muốt. Nó rất ngoan và thích bắt chuột.',
+          score: 80,
+          missedWords: [],
+        },
+        {
+          id: '2',
+          date: new Date().toISOString(),
+          text: 'Buổi sáng quê em gió mát rượi. Ông mặt trời đỏ rực nhô lên sau lũy tre làng.',
+          score: 90,
+          missedWords: [],
+        },
+        {
+          id: '3',
+          date: new Date().toISOString(),
+          text: 'Chú cá vàng bơi lội tung tăng trong bể nước. Vảy cá vàng óng lấp lánh như dát vàng.',
+          score: 85,
+          missedWords: [],
+        },
+      ];
+
+      const newlyUnlocked = await checkAndUnlockAchievements(logs);
+      expect(newlyUnlocked).toContain('badge_vua_danh_van');
+    });
+
+    it('should not unlock achievements that are already unlocked', async () => {
+      // Setup already unlocked Chăm Chỉ badge
+      await checkAndUnlockAchievements(Array.from({ length: 5 }, (_, i) => ({
+        id: `log-${i}`,
+        date: new Date().toISOString(),
+        text: `story-${i}`,
+        score: 70,
+        missedWords: [],
+      })));
+
+      // Call checkAndUnlockAchievements again with same logs
+      const logsAgain = Array.from({ length: 5 }, (_, i) => ({
+        id: `log-${i}`,
+        date: new Date().toISOString(),
+        text: `story-${i}`,
+        score: 70,
+        missedWords: [],
+      }));
+
+      const newlyUnlocked = await checkAndUnlockAchievements(logsAgain);
+      expect(newlyUnlocked).toEqual([]); // No new badges unlocked
+    });
   });
 });
