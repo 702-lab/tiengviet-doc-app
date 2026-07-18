@@ -13,14 +13,7 @@ export const ControlPanel: React.FC = () => {
   const [pressedBtn, setPressedBtn] = useState<'play' | 'stop' | null>(null);
 
   return (
-    <View style={[
-      styles.container,
-      {
-        backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
-        borderColor: isDark ? COLORS.borderDark : COLORS.border,
-        borderBottomColor: isDark ? '#162228' : '#D5D5D5',
-      }
-    ]}>
+    <View style={styles.container}>
       {/* Hàng 1: Chuyển đổi chế độ đọc */}
       <View style={[styles.modeRow, { backgroundColor: isDark ? '#16161a' : '#F1F3F5' }]}>
         <TouchableOpacity
@@ -164,16 +157,8 @@ export const ControlPanel: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 24,
-    padding: 16,
-    borderWidth: 2,
-    borderBottomWidth: 5,
-    marginVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 10,
-    elevation: 2,
+    paddingVertical: 8,
+    width: '100%',
   },
   modeRow: {
     flexDirection: 'row',
