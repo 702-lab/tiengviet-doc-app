@@ -63,20 +63,9 @@ export const PracticePanel: React.FC = () => {
   };
 
   return (
-    <View style={[
-      styles.container,
-      {
-        backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
-        borderColor: isDark ? COLORS.borderDark : COLORS.border,
-        borderBottomColor: isDark ? '#162228' : '#D5D5D5',
-      }
-    ]}>
+    <View style={styles.container}>
       {/* Hiệu ứng pháo hoa & sao rơi trên màn hình */}
       {showCelebration && <Celebration />}
-
-      <Text style={[styles.title, { color: isDark ? COLORS.textDark : COLORS.text }]}>
-        🎙️ Thử Thách Đọc To
-      </Text>
 
       {/* TH 1: Đang trong quá trình ghi âm */}
       {isRecording && (
@@ -217,23 +206,9 @@ export const PracticePanel: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 24,
-    padding: 16,
-    borderWidth: 2,
-    borderBottomWidth: 5,
-    marginVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 10,
-    elevation: 2,
+    paddingVertical: 8,
+    width: '100%',
     position: 'relative',
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: '800',
-    marginBottom: 12,
-    letterSpacing: 0.5,
   },
   stateContainer: {
     alignItems: 'center',
