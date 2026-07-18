@@ -37,9 +37,9 @@ interface ReaderContextType {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
 
-  // Giọng đọc vùng miền (Northern/Southern Dialect)
-  dialect: 'north' | 'south';
-  setDialect: (dialect: 'north' | 'south') => void;
+  // Giọng đọc vùng miền (Northern/Southern/Central Dialect)
+  dialect: 'north' | 'south' | 'central';
+  setDialect: (dialect: 'north' | 'south' | 'central') => void;
 }
 
 const ReaderContext = createContext<ReaderContextType | undefined>(undefined);
@@ -73,8 +73,8 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Theme sáng/tối
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-  // Giọng đọc miền Bắc/Nam
-  const [dialect, _setDialect] = useState<'north' | 'south'>('north');
+  // Giọng đọc miền Bắc/Nam/Trung
+  const [dialect, _setDialect] = useState<'north' | 'south' | 'central'>('north');
   const [availableVoices, setAvailableVoices] = useState<Speech.Voice[]>([]);
 
   const recordingRef = useRef<Audio.Recording | null>(null);
@@ -85,7 +85,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const currentIndexRef = useRef(0);
   const speedRef = useRef(0.8);
   const modeRef = useRef<'spell' | 'read'>('spell');
-  const dialectRef = useRef<'north' | 'south'>('north');
+  const dialectRef = useRef<'north' | 'south' | 'central'>('north');
   const loopActiveRef = useRef(false);
   
   // Tránh vòng lặp vô hạn khi lưu thiết lập lúc khởi động
@@ -156,7 +156,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     _setMode(newMode);
   };
 
-  const setDialect = (newDialect: 'north' | 'south') => {
+  const setDialect = (newDialect: 'north' | 'south' | 'central') => {
     _setDialect(newDialect);
   };
 
@@ -167,7 +167,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
   // Hàm chọn Voice ID tương thích với dialect của hệ thống
-  const getVoiceForDialect = (currentDialect: 'north' | 'south') => {
+  const getVoiceForDialect = (currentDialect: 'north' | 'south' | 'central') => {
     if (currentDialect === 'south') {
       const south = availableVoices.find(v => 
         v.name.toLowerCase().includes('south') || 
@@ -175,6 +175,16 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         v.name.toLowerCase().includes('loc')
       );
       return south?.identifier;
+    } else if (currentDialect === 'central') {
+      // Hệ điều hành di động thường không phân tách riêng voice miền Trung (Huế/Đà Nẵng).
+      // Chúng ta sẽ tìm kiếm giọng nói gắn thẻ central/hue nếu có, nếu không sẽ dùng giọng Bắc (chuẩn ngữ âm học của SGK)
+      const central = availableVoices.find(v => 
+        v.name.toLowerCase().includes('central') ||
+        v.name.toLowerCase().includes('hue') ||
+        v.name.toLowerCase().includes('danang')
+      );
+      if (central) return central.identifier;
+      return undefined; // Dùng giọng mặc định
     } else {
       const north = availableVoices.find(v => 
         v.name.toLowerCase().includes('north') || 
@@ -323,7 +333,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const recording = recordingRef.current;
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
-      setRecordedAudioUri(uri); // Lưu lại URI của file ghi âm
+      setRecordedAudioUri(uri);
       recordingRef.current = null;
 
       Alert.alert(
@@ -360,11 +370,10 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  // Phát lại âm thanh giọng bé đã ghi âm locally
   const playRecordedAudio = async () => {
     if (!recordedAudioUri) return;
     try {
-      stop(); // Dừng mọi TTS đang phát âm
+      stop();
       
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: recordedAudioUri },
@@ -456,7 +465,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const clearAssessment = () => {
     setWordAssessment(null);
     setAssessmentScore(null);
-    setRecordedAudioUri(null); // Xóa cache ghi âm
+    setRecordedAudioUri(null);
   };
 
   useEffect(() => {

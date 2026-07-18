@@ -15,11 +15,26 @@ const ONSET_PRONUNCIATION_NORTH: { [key: string]: string } = {
 
 const ONSET_PRONUNCIATION_SOUTH: { [key: string]: string } = {
   'b': 'bờ', 'c': 'cờ', 'ch': 'chờ', 'd': 'dờ', 'đ': 'đờ',
-  'g': 'gờ', 'gh': 'gờ', 'gi': 'dờ', 'h': 'hờ', 'k': 'cờ',  // Giọng Nam: "gi" đọc như "dờ"
+  'g': 'gờ', 'gh': 'gờ', 'gi': 'dờ', 'h': 'hờ', 'k': 'cờ',  // Giọng Nam: gi -> dờ
   'kh': 'khờ', 'l': 'lờ', 'm': 'mờ', 'n': 'nờ', 'ng': 'ngờ',
   'ngh': 'ngờ', 'nh': 'nhờ', 'p': 'pờ', 'ph': 'phờ', 'q': 'quờ',
-  'qu': 'quờ', 'r': 'gờ', 's': 'sờ', 't': 'tờ', 'th': 'thờ',  // Giọng Nam: "r" địa phương hay phát âm là "gờ" (rô -> gô)
-  'tr': 'trờ', 'v': 'dờ', 'x': 'xờ'                          // Giọng Nam: "v" phát âm là "dờ" (về -> dề)
+  'qu': 'quờ', 'r': 'gờ', 's': 'sờ', 't': 'tờ', 'th': 'thờ',  // Giọng Nam: r -> gờ
+  'tr': 'trờ', 'v': 'dờ', 'x': 'xờ'                          // Giọng Nam: v -> dờ
+};
+
+// Giọng miền Trung: Giữ lại chuẩn phát âm âm uốn lưỡi (tr, r, s) và phân biệt rõ vờ / dờ
+const ONSET_PRONUNCIATION_CENTRAL: { [key: string]: string } = {
+  'b': 'bờ', 'c': 'cờ', 'ch': 'chờ', 'd': 'dờ', 'đ': 'đờ',
+  'g': 'gờ', 'gh': 'gờ', 'gi': 'giờ', 'h': 'hờ', 'k': 'cờ',
+  'kh': 'khờ', 'l': 'lờ', 'm': 'mờ', 'n': 'nờ', 'ng': 'ngờ',
+  'ngh': 'ngờ', 'nh': 'nhờ', 'p': 'pờ', 'ph': 'phờ', 'q': 'quờ',
+  'qu': 'quờ', 
+  'r': 'rờ',   // Phát âm rung đầu lưỡi rõ rệt (trilled r)
+  's': 'sờ',   // Phát âm uốn lưỡi rõ rệt (retroflex s)
+  't': 'tờ', 'th': 'thờ',
+  'tr': 'trờ', // Phát âm uốn lưỡi rõ rệt (retroflex tr)
+  'v': 'vờ', 
+  'x': 'xờ'
 };
 
 const TONE_MAP: { [key: string]: string } = {
@@ -62,7 +77,7 @@ export interface Token {
 /**
  * Phân tích một từ tiếng Việt thành các thành phần âm tiết theo giọng vùng miền
  */
-export function parseWord(word: string, dialect: 'north' | 'south' = 'north'): ParsedSyllable {
+export function parseWord(word: string, dialect: 'north' | 'south' | 'central' = 'north'): ParsedSyllable {
   const normalized = word.toLowerCase().normalize('NFD');
   
   let tone = 'ngang';
@@ -110,7 +125,13 @@ export function parseWord(word: string, dialect: 'north' | 'south' = 'north'): P
   }
   
   const finalRhyme = rhyme.normalize('NFC');
-  const pronunciationMap = dialect === 'south' ? ONSET_PRONUNCIATION_SOUTH : ONSET_PRONUNCIATION_NORTH;
+  
+  let pronunciationMap = ONSET_PRONUNCIATION_NORTH;
+  if (dialect === 'south') {
+    pronunciationMap = ONSET_PRONUNCIATION_SOUTH;
+  } else if (dialect === 'central') {
+    pronunciationMap = ONSET_PRONUNCIATION_CENTRAL;
+  }
   
   return {
     original: word,
@@ -126,7 +147,7 @@ export function parseWord(word: string, dialect: 'north' | 'south' = 'north'): P
 /**
  * Sinh các bước đánh vần từ một từ tiếng Việt dựa trên giọng vùng miền
  */
-export function generateSpellingSteps(word: string, dialect: 'north' | 'south' = 'north'): SpellingResult {
+export function generateSpellingSteps(word: string, dialect: 'north' | 'south' | 'central' = 'north'): SpellingResult {
   const cleanWord = word.replace(/[.,!?;:"()“”]/g, '').trim();
   const parsed = parseWord(cleanWord, dialect);
   
@@ -183,7 +204,7 @@ export function generateSpellingSteps(word: string, dialect: 'north' | 'south' =
 /**
  * Tách một đoạn văn thành danh sách các Token theo giọng vùng miền
  */
-export function tokenizeText(text: string, dialect: 'north' | 'south' = 'north'): Token[] {
+export function tokenizeText(text: string, dialect: 'north' | 'south' | 'central' = 'north'): Token[] {
   if (!text) return [];
   
   const matches = text.match(/[\p{L}]+|[^\p{L}]+/gu);
