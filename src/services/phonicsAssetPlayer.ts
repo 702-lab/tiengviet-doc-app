@@ -27,6 +27,8 @@ async function ensureAudioDir() {
 
 /**
  * Resolves the relative path for a phonic asset based on type and dialect.
+ * To support true regional pronunciations, all asset types (onsets, rhymes, tones, words)
+ * are resolved under their respective dialect folder (north, south, central).
  */
 export function getAssetRelativePath(
   text: string, 
@@ -39,13 +41,13 @@ export function getAssetRelativePath(
     case 'onset':
       return `${dialect}/onsets/${clean}.mp3`;
     case 'rhyme':
-      return `common/rhymes/${clean}.mp3`;
+      return `${dialect}/rhymes/${clean}.mp3`;
     case 'tone':
-      return `common/tones/${clean}.mp3`;
+      return `${dialect}/tones/${clean}.mp3`;
     case 'combined_no_tone':
     case 'final':
     default:
-      return `common/words/${clean}.mp3`;
+      return `${dialect}/words/${clean}.mp3`;
   }
 }
 

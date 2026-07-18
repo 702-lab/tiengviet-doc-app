@@ -55,21 +55,24 @@ describe('Phonics Asset Player Unit Tests', () => {
     vi.clearAllMocks();
   });
 
-  it('should correctly resolve relative paths for different phonic parts and accents', () => {
+  it('should correctly resolve relative paths under regional dialect folders', () => {
     // 1. Onsets
     expect(getAssetRelativePath('b', 'onset', 'north')).toBe('north/onsets/b.mp3');
     expect(getAssetRelativePath('v', 'onset', 'south')).toBe('south/onsets/v.mp3');
     expect(getAssetRelativePath('r', 'onset', 'central')).toBe('central/onsets/r.mp3');
 
-    // 2. Rhymes
-    expect(getAssetRelativePath('oang', 'rhyme', 'north')).toBe('common/rhymes/oang.mp3');
+    // 2. Rhymes (Now regionalized)
+    expect(getAssetRelativePath('oang', 'rhyme', 'north')).toBe('north/rhymes/oang.mp3');
+    expect(getAssetRelativePath('oang', 'rhyme', 'south')).toBe('south/rhymes/oang.mp3');
 
-    // 3. Tones (checks diacritics cleaning)
-    expect(getAssetRelativePath('huyền', 'tone', 'north')).toBe('common/tones/huyen.mp3');
-    expect(getAssetRelativePath('ngã', 'tone', 'south')).toBe('common/tones/nga.mp3');
+    // 3. Tones (Now regionalized)
+    expect(getAssetRelativePath('huyền', 'tone', 'north')).toBe('north/tones/huyen.mp3');
+    expect(getAssetRelativePath('ngã', 'tone', 'south')).toBe('south/tones/nga.mp3');
+    expect(getAssetRelativePath('hỏi', 'tone', 'central')).toBe('central/tones/hoi.mp3');
 
-    // 4. Combined / Words
-    expect(getAssetRelativePath('bàn', 'final', 'north')).toBe('common/words/ban.mp3');
+    // 4. Combined / Words (Now regionalized)
+    expect(getAssetRelativePath('bàn', 'final', 'north')).toBe('north/words/ban.mp3');
+    expect(getAssetRelativePath('bàn', 'final', 'south')).toBe('south/words/ban.mp3');
   });
 
   it('should play cached file directly if it already exists locally', async () => {
