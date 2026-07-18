@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useReader } from '../context/ReaderContext';
+import { Celebration } from './Celebration';
+import { Audio } from 'expo-av';
 import { COLORS } from '../theme/colors';
 
 export const PracticePanel: React.FC = () => {
@@ -9,12 +11,40 @@ export const PracticePanel: React.FC = () => {
     isAssessing, 
     wordAssessment, 
     assessmentScore, 
+    recordedAudioUri,
     startRecording, 
     stopRecordingAndAssess, 
+    playRecordedAudio,
     clearAssessment,
     theme
   } = useReader();
+  
+  const [showCelebration, setShowCelebration] = useState(false);
   const isDark = theme === 'dark';
+
+  // Kích hoạt hiệu ứng chúc mừng khi bé đạt điểm cao (>= 80%)
+  useEffect(() => {
+    if (assessmentScore !== null && assessmentScore >= 80) {
+      setShowCelebration(true);
+      playVictorySound();
+      
+      const timer = setTimeout(() => setShowCelebration(false), 4000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowCelebration(false);
+    }
+  }, [assessmentScore]);
+
+  const playVictorySound = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav' }
+      );
+      await sound.playAsync();
+    } catch {
+      // Bỏ qua lỗi âm thanh nếu thiết bị offline
+    }
+  };
 
   const getStars = (score: number) => {
     if (score === 100) return '⭐⭐⭐⭐⭐';
@@ -38,6 +68,9 @@ export const PracticePanel: React.FC = () => {
         borderColor: isDark ? '#2D3748' : COLORS.border
       }
     ]}>
+      {/* Hiệu ứng pháo hoa & sao rơi trên màn hình */}
+      {showCelebration && <Celebration />}
+
       <Text style={[styles.title, { color: isDark ? COLORS.textDark : COLORS.text }]}>🎙️ Luyện Phát Âm (AI STT)</Text>
 
       {/* TH 1: Đang trong quá trình ghi âm */}
@@ -76,20 +109,35 @@ export const PracticePanel: React.FC = () => {
           </Text>
           <Text style={styles.messageText}>{getMessage(assessmentScore)}</Text>
           
-          <TouchableOpacity 
-            style={[
-              styles.actionBtn, 
-              styles.resetBtn,
-              {
-                backgroundColor: isDark ? '#2D3748' : '#F1F3F5',
-                borderColor: isDark ? '#4A5568' : COLORS.border
-              }
-            ]} 
-            onPress={clearAssessment}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.resetBtnText, { color: isDark ? COLORS.textDark : COLORS.text }]}>🔄 Luyện đọc lại</Text>
-          </TouchableOpacity>
+          <View style={styles.resultActions}>
+            {recordedAudioUri && (
+              <TouchableOpacity 
+                style={[
+                  styles.actionBtn, 
+                  styles.playVoiceBtn,
+                ]} 
+                onPress={playRecordedAudio}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.btnText}>🔊 Nghe lại giọng đọc</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity 
+              style={[
+                styles.actionBtn, 
+                styles.resetBtn,
+                {
+                  backgroundColor: isDark ? '#2D3748' : '#F1F3F5',
+                  borderColor: isDark ? '#4A5568' : COLORS.border
+                }
+              ]} 
+              onPress={clearAssessment}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.resetBtnText, { color: isDark ? COLORS.textDark : COLORS.text }]}>🔄 Luyện đọc lại</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -123,6 +171,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
     marginVertical: 12,
+    position: 'relative', // Quan trọng để định vị hoạt ảnh sao bay
   },
   title: {
     fontSize: 15,
@@ -169,6 +218,10 @@ const styles = StyleSheet.create({
   stopRecBtn: {
     backgroundColor: COLORS.error,
   },
+  playVoiceBtn: {
+    backgroundColor: COLORS.secondary,
+    flex: 1.2,
+  },
   btnText: {
     color: '#FFFFFF',
     fontSize: 15,
@@ -204,8 +257,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
+  resultActions: {
+    flexDirection: 'row',
+    gap: 8,
+    width: '100%',
+  },
   resetBtn: {
     borderWidth: 1.5,
+    flex: 1,
   },
   resetBtnText: {
     fontSize: 15,
