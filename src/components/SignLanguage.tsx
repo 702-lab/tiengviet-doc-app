@@ -1,6 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useReader } from '../context/ReaderContext';
+import { MouthSvg } from './MouthSvg';
+import { HandSignSvg } from './HandSignSvg';
 import { COLORS } from '../theme/colors';
 
 const MOUTH_GUIDE: { [key: string]: string } = {
@@ -96,6 +98,33 @@ export const SignLanguage: React.FC = () => {
     return null;
   }
 
+  // Phân loại kiểu khẩu hình miệng vẽ bằng SVG
+  const getMouthType = (char: string): 'wide-open' | 'semi-open' | 'flat-smile' | 'rounded' | 'closed' | 'default' => {
+    const base = char[0];
+    if (['a', 'ă', 'â'].includes(base)) return 'wide-open';
+    if (['o', 'ơ'].includes(base)) return 'semi-open';
+    if (['e', 'ê', 'i', 'y', 'd', 'gi'].includes(base)) return 'flat-smile';
+    if (['u', 'ư', 'ô', 'qu'].includes(base)) return 'rounded';
+    if (['b', 'm', 'p', 'v', 'ph'].includes(base)) return 'closed';
+    return 'default';
+  };
+
+  // Phân loại kiểu thủ ngữ vẽ bằng SVG
+  const getHandSignType = (char: string): 'fist' | 'flat' | 'c-shape' | 'point' | 'pinky' | 'circle' | 'v-sign' | 'default' => {
+    const base = char[0];
+    if (['a', 'ă', 'â', 's', 'm', 'n'].includes(base)) return 'fist';
+    if (['b', 'p', 'ph'].includes(base)) return 'flat';
+    if (['c', 'ch', 'kh'].includes(base)) return 'c-shape';
+    if (['d', 'đ', 't', 'th', 'tr', 'x'].includes(base)) return 'point';
+    if (['i', 'y'].includes(base)) return 'pinky';
+    if (['o', 'ô', 'ơ', 'u', 'ư'].includes(base)) return 'circle';
+    if (['v'].includes(base)) return 'v-sign';
+    return 'default';
+  };
+
+  const mouthType = getMouthType(activeChar);
+  const handSignType = getHandSignType(activeChar);
+
   return (
     <View style={[
       styles.container, 
@@ -118,7 +147,9 @@ export const SignLanguage: React.FC = () => {
           <View style={styles.badgeContainer}>
             <Text style={[styles.badge, { backgroundColor: isDark ? '#2a441e' : '#E2F0D9', color: isDark ? '#a3e635' : '#385723' }]}>KHẨU HÌNH MIỆNG</Text>
           </View>
-          <Text style={styles.activeLetter}>{currentStep.text.toUpperCase()}</Text>
+          
+          <MouthSvg type={mouthType} isDark={isDark} />
+          
           <Text style={[styles.instructionText, { color: isDark ? COLORS.textDark : COLORS.text }]}>{mouthInstruction}</Text>
         </View>
 
@@ -134,9 +165,9 @@ export const SignLanguage: React.FC = () => {
             <View style={styles.badgeContainer}>
               <Text style={[styles.badge, { backgroundColor: isDark ? '#5c2d1b' : '#FCE4D6', color: isDark ? '#fb923c' : '#C65911' }]}>KÝ HIỆU THỦ NGỮ VSL</Text>
             </View>
-            <View style={styles.signHandMock}>
-              <Text style={styles.handSymbol}>🤟</Text>
-            </View>
+            
+            <HandSignSvg type={handSignType} isDark={isDark} />
+            
             <Text style={[styles.instructionText, { color: isDark ? COLORS.textDark : COLORS.text }]}>{signInstruction}</Text>
           </View>
         ) : null}
@@ -169,6 +200,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 180,
   },
   badgeContainer: {
     marginBottom: 8,
@@ -180,21 +213,6 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 8,
     overflow: 'hidden',
-  },
-  activeLetter: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: COLORS.primary,
-    marginVertical: 6,
-  },
-  signHandMock: {
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 4,
-  },
-  handSymbol: {
-    fontSize: 38,
   },
   instructionText: {
     fontSize: 13,
