@@ -4,6 +4,7 @@ import { useReader } from '../context/ReaderContext';
 import { KaraokeText } from '../components/KaraokeText';
 import { VisualPhonics } from '../components/VisualPhonics';
 import { SignLanguage } from '../components/SignLanguage';
+import { PracticePanel } from '../components/PracticePanel';
 import { ControlPanel } from '../components/ControlPanel';
 import { COLORS } from '../theme/colors';
 
@@ -48,6 +49,9 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({ onNavigateToHome }) 
 
         {/* Hướng dẫn Thủ ngữ / Khẩu hình */}
         <SignLanguage />
+
+        {/* Luyện tập phát âm AI */}
+        <PracticePanel />
 
         {/* Bảng điều khiển */}
         <ControlPanel />

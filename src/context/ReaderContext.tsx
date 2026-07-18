@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { Alert } from 'react-native';
 import { Token, tokenizeText, ParsedSyllable } from '../services/phonicsEngine';
 import { speakAsync, stopAllSpeech } from '../services/audioManager';
+import { Audio } from 'expo-av';
 
 interface ReaderContextType {
   text: string;
@@ -17,6 +19,15 @@ interface ReaderContextType {
   pause: () => void;
   stop: () => void;
   activeWordParsed: ParsedSyllable | null;
+  
+  // Các tính năng phục vụ Luyện phát âm & AI STT Assessment
+  isRecording: boolean;
+  isAssessing: boolean;
+  wordAssessment: { [tokenId: string]: 'correct' | 'incorrect' } | null;
+  assessmentScore: number | null;
+  startRecording: () => Promise<void>;
+  stopRecordingAndAssess: () => Promise<void>;
+  clearAssessment: () => void;
 }
 
 const ReaderContext = createContext<ReaderContextType | undefined>(undefined);
@@ -37,10 +48,18 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeTokenId, setActiveTokenId] = useState<string | null>(null);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
-  const [speed, _setSpeed] = useState(0.8); // Mặc định chậm một chút cho bé (0.8x)
+  const [speed, _setSpeed] = useState(0.8);
   const [mode, _setMode] = useState<'spell' | 'read'>('spell');
 
-  // Refs để lưu trữ trạng thái chạy ngầm tránh lỗi closure trong hàm async
+  // Trạng thái cho ghi âm và đánh giá phát âm
+  const [isRecording, setIsRecording] = useState(false);
+  const [isAssessing, setIsAssessing] = useState(false);
+  const [wordAssessment, setWordAssessment] = useState<{ [tokenId: string]: 'correct' | 'incorrect' } | null>(null);
+  const [assessmentScore, setAssessmentScore] = useState<number | null>(null);
+
+  const recordingRef = useRef<Audio.Recording | null>(null);
+
+  // Refs tránh stale closure trong vòng lặp phát âm thanh
   const isPlayingRef = useRef(false);
   const tokensRef = useRef<Token[]>([]);
   const currentIndexRef = useRef(0);
@@ -48,7 +67,6 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const modeRef = useRef<'spell' | 'read'>('spell');
   const loopActiveRef = useRef(false);
 
-  // Cập nhật các ref khi state thay đổi
   useEffect(() => {
     tokensRef.current = tokens;
   }, [tokens]);
@@ -63,6 +81,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const setText = (newText: string) => {
     stop();
+    clearAssessment();
     _setText(newText);
     const newTokens = tokenizeText(newText);
     setTokens(newTokens);
@@ -79,7 +98,7 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  // Hàm chạy vòng lặp phát âm thanh tuần tự
+  // Vòng lặp phát âm
   const runPlaybackLoop = async () => {
     if (loopActiveRef.current) return;
     loopActiveRef.current = true;
@@ -90,36 +109,28 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const token = tokensRef.current[index];
 
         if (!token.isWord) {
-          // Token là khoảng trắng hoặc dấu câu
           setActiveTokenId(token.id);
           setActiveStepIndex(-1);
           
-          // Xác định thời gian dừng nghỉ theo loại dấu câu
-          let pauseTime = 100; // Mặc định cho dấu cách
+          let pauseTime = 100;
           const trimmedText = token.text.trim();
           if (trimmedText && PUNCTUATION_DELAYS[trimmedText]) {
             pauseTime = PUNCTUATION_DELAYS[trimmedText];
           }
           
-          // Chia cho tốc độ đọc
           await delay(pauseTime / speedRef.current);
           currentIndexRef.current++;
           continue;
         }
 
-        // Token là từ cần đọc
         setActiveTokenId(token.id);
 
         if (modeRef.current === 'read') {
-          // CHẾ ĐỘ ĐỌC TRƠN
           setActiveStepIndex(-1);
           await speakAsync(token.text, speedRef.current);
-          
           if (!isPlayingRef.current) break;
-          // Nghỉ giữa các từ
           await delay(350 / speedRef.current);
         } else {
-          // CHẾ ĐỘ ĐÁNH VẦN
           const spellingResult = token.spellingResult;
           if (spellingResult && spellingResult.steps.length > 0) {
             const steps = spellingResult.steps;
@@ -129,22 +140,16 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               
               setActiveStepIndex(stepIdx);
               const step = steps[stepIdx];
-              
-              // Đọc âm của bước hiện tại
               await speakAsync(step.speech, speedRef.current);
-              
               if (!isPlayingRef.current) break;
-              // Nghỉ giữa các bước đánh vần
               await delay(250 / speedRef.current);
             }
           } else {
-            // Trường hợp dự phòng nếu không phân tích được vần
             setActiveStepIndex(-1);
             await speakAsync(token.text, speedRef.current);
           }
           
           if (!isPlayingRef.current) break;
-          // Nghỉ lâu hơn một chút sau khi đánh vần xong một từ để bé hấp thụ
           await delay(450 / speedRef.current);
         }
 
@@ -152,7 +157,6 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         currentIndexRef.current++;
       }
 
-      // Kiểm tra xem đã kết thúc toàn bộ văn bản chưa
       if (currentIndexRef.current >= tokensRef.current.length && isPlayingRef.current) {
         setIsPlaying(false);
         isPlayingRef.current = false;
@@ -169,12 +173,10 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const play = () => {
     if (tokens.length === 0) return;
-    
-    // Nếu đã hoàn thành trước đó thì chạy lại từ đầu
+    clearAssessment(); // Xóa kết quả đánh giá cũ khi học đọc lại
     if (currentIndexRef.current >= tokens.length) {
       currentIndexRef.current = 0;
     }
-    
     setIsPlaying(true);
     isPlayingRef.current = true;
     runPlaybackLoop();
@@ -195,14 +197,161 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     currentIndexRef.current = 0;
   };
 
-  // Hủy âm thanh khi unmount component
+  // --- CÁC HÀM GHI ÂM VÀ ĐÁNH GIÁ PHÁT ÂM (AI STT ASSESSMENT) ---
+
+  const startRecording = async () => {
+    try {
+      stop(); // Dừng đọc mẫu nếu đang phát
+      clearAssessment();
+
+      // Xin quyền ghi âm
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status !== 'granted') {
+        Alert.alert('Lỗi', 'Ứng dụng cần quyền truy cập Micro để ghi âm giọng đọc của bé.');
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      
+      recordingRef.current = recording;
+      setIsRecording(true);
+    } catch (err) {
+      console.error('Không thể bắt đầu ghi âm:', err);
+      Alert.alert('Lỗi', 'Đã xảy ra lỗi khi khởi động Micro.');
+    }
+  };
+
+  const stopRecordingAndAssess = async () => {
+    if (!recordingRef.current) return;
+
+    try {
+      setIsRecording(false);
+      setIsAssessing(true);
+
+      const recording = recordingRef.current;
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      recordingRef.current = null;
+
+      // Giả lập lựa chọn cho phụ huynh để kiểm thử hiệu quả các trường hợp
+      Alert.alert(
+        'AI Phân Tích Giọng Đọc',
+        'Chọn chế độ giả lập đọc của bé để kiểm tra màu sắc Karaoke:',
+        [
+          {
+            text: 'Đọc Đúng 100% 🌟',
+            onPress: () => processAssessment(text)
+          },
+          {
+            text: 'Đọc Sai Một Số Từ ⚠️',
+            onPress: () => {
+              // Giả lập bé đọc thiếu một vài từ ngẫu nhiên
+              const words = text.split(/\s+/);
+              const simulatedWords = words.filter((_, idx) => idx % 4 !== 0); // Bỏ bớt từ mỗi 4 từ
+              processAssessment(simulatedWords.join(' '));
+            }
+          },
+          {
+            text: 'Đọc Sai Nhiều ❌',
+            onPress: () => {
+              // Giả lập bé đọc sai hoặc bỏ sót nhiều từ
+              const words = text.split(/\s+/);
+              const simulatedWords = words.filter((_, idx) => idx % 2 === 0); // Bỏ 50% số từ
+              processAssessment(simulatedWords.join(' '));
+            }
+          }
+        ],
+        { cancelable: false }
+      );
+
+    } catch (err) {
+      console.error('Không thể dừng ghi âm:', err);
+      setIsAssessing(false);
+    }
+  };
+
+  // Thuật toán so khớp chuỗi con chung dài nhất (Longest Common Subsequence - LCS)
+  // để đánh giá chính xác từng từ bé đọc được so với văn bản gốc
+  const processAssessment = (transcribedText: string) => {
+    const wordTokens = tokens.filter(t => t.isWord);
+    if (wordTokens.length === 0) {
+      setIsAssessing(false);
+      return;
+    }
+
+    // Chuẩn hóa chuỗi văn bản gốc và văn bản đọc được
+    const cleanWord = (w: string) => w.toLowerCase().replace(/[.,!?;:"()“”]/g, '').trim().normalize('NFC');
+    
+    const targetWords = wordTokens.map(t => cleanWord(t.text));
+    const spokenWords = transcribedText.split(/\s+/).map(w => cleanWord(w)).filter(Boolean);
+
+    // Tính ma trận LCS
+    const m = targetWords.length;
+    const n = spokenWords.length;
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        if (targetWords[i - 1] === spokenWords[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+
+    // Truy vết ngược để lấy tập hợp chỉ số từ viết đúng trong văn bản gốc
+    const matchedTargetIndices = new Set<number>();
+    let i = m, j = n;
+    while (i > 0 && j > 0) {
+      if (targetWords[i - 1] === spokenWords[j - 1]) {
+        matchedTargetIndices.add(i - 1);
+        i--;
+        j--;
+      } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+        i--;
+      } else {
+        j--;
+      }
+    }
+
+    // Gán kết quả đánh giá cho từng Token
+    const assessmentResult: { [tokenId: string]: 'correct' | 'incorrect' } = {};
+    wordTokens.forEach((token, index) => {
+      if (matchedTargetIndices.has(index)) {
+        assessmentResult[token.id] = 'correct';
+      } else {
+        assessmentResult[token.id] = 'incorrect';
+      }
+    });
+
+    // Tính điểm phần trăm chính xác
+    const correctCount = matchedTargetIndices.size;
+    const score = Math.round((correctCount / wordTokens.length) * 100);
+
+    setWordAssessment(assessmentResult);
+    setAssessmentScore(score);
+    setIsAssessing(false);
+  };
+
+  const clearAssessment = () => {
+    setWordAssessment(null);
+    setAssessmentScore(null);
+  };
+
   useEffect(() => {
     return () => {
       stopAllSpeech();
     };
   }, []);
 
-  // Lấy phân tích âm tiết của từ đang hoạt động để phục vụ UI VisualPhonics
   const activeToken = tokens.find((t) => t.id === activeTokenId);
   const activeWordParsed = activeToken?.isWord && activeToken.spellingResult
     ? activeToken.spellingResult.parsed
@@ -225,6 +374,14 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         pause,
         stop,
         activeWordParsed,
+        
+        isRecording,
+        isAssessing,
+        wordAssessment,
+        assessmentScore,
+        startRecording,
+        stopRecordingAndAssess,
+        clearAssessment,
       }}
     >
       {children}

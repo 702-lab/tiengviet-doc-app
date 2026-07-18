@@ -4,13 +4,33 @@ import { useReader } from '../context/ReaderContext';
 import { COLORS } from '../theme/colors';
 
 export const KaraokeText: React.FC = () => {
-  const { tokens, activeTokenId, activeStepIndex, mode } = useReader();
+  const { tokens, activeTokenId, activeStepIndex, mode, wordAssessment } = useReader();
 
   // Hàm hiển thị chữ cái đang được đánh vần trực tiếp trên từ đó
   const renderWordToken = (token: any) => {
     const isActive = token.id === activeTokenId;
+    const hasAssessment = wordAssessment && wordAssessment[token.id];
     
     if (!isActive) {
+      if (hasAssessment) {
+        const isCorrect = wordAssessment[token.id] === 'correct';
+        return (
+          <View 
+            key={token.id} 
+            style={[
+              styles.assessedWordContainer, 
+              isCorrect ? styles.correctWord : styles.incorrectWord
+            ]}
+          >
+            <Text style={[
+              styles.normalWord, 
+              { color: isCorrect ? '#2E7D32' : '#C62828', marginHorizontal: 0, paddingVertical: 0 }
+            ]}>
+              {token.text}
+            </Text>
+          </View>
+        );
+      }
       return (
         <Text key={token.id} style={styles.normalWord}>
           {token.text}
@@ -36,12 +56,10 @@ export const KaraokeText: React.FC = () => {
     const originalText = token.text;
 
     // Phân rã từ để tô màu chi tiết theo từng ký tự
-    // Ví dụ: "bàn" -> "b" (âm đầu) + "àn" (phần vần chứa dấu)
     let onsetPart = '';
     let rhymePart = originalText;
 
     if (onset) {
-      // Tìm điểm cắt âm đầu (bỏ qua viết hoa/thường)
       const onsetLen = onset.length;
       onsetPart = originalText.slice(0, onsetLen);
       rhymePart = originalText.slice(onsetLen);
@@ -54,31 +72,26 @@ export const KaraokeText: React.FC = () => {
 
     switch (currentStep.type) {
       case 'onset':
-        // Đang đánh vần âm đầu -> Tô màu đỏ/coral, phóng to âm đầu
         onsetColor = COLORS.onset;
         onsetWeight = 'bold';
         break;
       case 'rhyme':
-        // Đang đánh vần vần -> Tô màu xanh lá, phóng to vần
         rhymeColor = COLORS.rhyme;
         rhymeWeight = 'bold';
         break;
       case 'combined_no_tone':
-        // Đọc ghép âm + vần chưa dấu -> Tô cả hai bằng màu trung gian, viết đậm
         onsetColor = COLORS.primary;
         rhymeColor = COLORS.primary;
         onsetWeight = 'bold';
         rhymeWeight = 'bold';
         break;
       case 'tone':
-        // Đọc thanh điệu -> Tô vần bằng màu xanh dương (nơi chứa dấu thanh)
         rhymeColor = COLORS.tone;
         onsetColor = COLORS.text;
         onsetWeight = 'bold';
         rhymeWeight = 'bold';
         break;
       case 'final':
-        // Đọc nguyên từ -> Highlight toàn bộ
         onsetColor = COLORS.primary;
         rhymeColor = COLORS.primary;
         onsetWeight = 'bold';
@@ -107,7 +120,6 @@ export const KaraokeText: React.FC = () => {
           if (token.isWord) {
             return renderWordToken(token);
           } else {
-            // Hiển thị khoảng trắng hoặc dấu câu bình thường
             return (
               <Text key={token.id} style={styles.punctuation}>
                 {token.text}
@@ -174,5 +186,22 @@ const styles = StyleSheet.create({
   spellingLetter: {
     fontSize: 28,
     fontFamily: 'System',
+  },
+  
+  // Styles phục vụ đánh giá phát âm đúng/sai
+  assessedWordContainer: {
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginHorizontal: 2,
+    borderWidth: 1,
+  },
+  correctWord: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#A5D6A7',
+  },
+  incorrectWord: {
+    backgroundColor: '#FFEBEE',
+    borderColor: '#EF9A9A',
   },
 });
