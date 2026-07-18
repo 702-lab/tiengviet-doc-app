@@ -1,20 +1,33 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { SafeAreaView, StyleSheet, StatusBar, Platform } from 'react-native';
+import { ReaderProvider } from './src/context/ReaderContext';
+import { HomeScreen } from './src/screens/HomeScreen';
+import { ReaderScreen } from './src/screens/ReaderScreen';
+import { COLORS } from './src/theme/colors';
 
 export default function App() {
+  const [currentScreen, setCurrentScreen] = useState<'home' | 'reader'>('home');
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <ReaderProvider>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar 
+          barStyle={Platform.OS === 'ios' ? 'dark-content' : 'default'}
+          backgroundColor={COLORS.cardBg}
+        />
+        {currentScreen === 'home' ? (
+          <HomeScreen onNavigateToReader={() => setCurrentScreen('reader')} />
+        ) : (
+          <ReaderScreen onNavigateToHome={() => setCurrentScreen('home')} />
+        ) }
+      </SafeAreaView>
+    </ReaderProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: COLORS.background,
   },
 });
