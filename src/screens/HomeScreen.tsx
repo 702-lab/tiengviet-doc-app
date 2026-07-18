@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useReader } from '../context/ReaderContext';
-import { loadCustomPassages, saveCustomPassages } from '../services/storage';
+import { loadCustomPassages, saveCustomPassages, loadSessionLogs, clearSessionLogs, SessionLog } from '../services/storage';
 import { COLORS } from '../theme/colors';
 
 const SAMPLE_TEXTS = [
@@ -27,13 +27,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
   const { setText, theme, toggleTheme } = useReader();
   const [inputVal, setInputVal] = useState('');
   const [customPassages, setCustomPassages] = useState<string[]>([]);
+  const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const isDark = theme === 'dark';
 
-  // Nạp danh sách bài tập đọc phụ huynh đã soạn từ trước
+  // Nạp bài tập đọc tự soạn và lịch sử học tập
   useEffect(() => {
-    loadCustomPassages().then(setCustomPassages).catch((err) => {
-      console.warn('Lỗi nạp bài đọc tự soạn:', err);
-    });
+    const initData = async () => {
+      try {
+        const passages = await loadCustomPassages();
+        setCustomPassages(passages);
+        
+        const logs = await loadSessionLogs();
+        setSessionLogs(logs);
+      } catch (err) {
+        console.warn('Lỗi nạp dữ liệu offline:', err);
+      }
+    };
+    initData();
   }, []);
 
   const handleStartReading = async (customText?: string) => {
@@ -43,7 +54,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
       return;
     }
 
-    // Nếu phụ huynh tự gõ văn bản mới (không trùng bài mẫu sẵn)
     if (!customText && !SAMPLE_TEXTS.some(s => s.text === textToRead)) {
       if (!customPassages.includes(textToRead)) {
         const updated = [textToRead, ...customPassages];
@@ -75,6 +85,51 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
     );
   };
 
+  const handleClearHistory = () => {
+    Alert.alert(
+      'Xác nhận xóa',
+      'Bạn có chắc chắn muốn xóa toàn bộ lịch sử học tập của bé không?',
+      [
+        { text: 'Hủy bỏ', style: 'cancel' },
+        {
+          text: 'Xóa lịch sử',
+          style: 'destructive',
+          onPress: async () => {
+            await clearSessionLogs();
+            setSessionLogs([]);
+            Alert.alert('Thành công', 'Đã xóa sạch lịch sử học tập.');
+          }
+        }
+      ]
+    );
+  };
+
+  // Tính toán các số liệu học bạ của bé
+  const totalSessions = sessionLogs.length;
+  const averageScore = totalSessions > 0 
+    ? Math.round(sessionLogs.reduce((acc, log) => acc + log.score, 0) / totalSessions)
+    : 0;
+
+  // Lấy ra danh sách các từ bé hay đọc sai nhất (Top 3)
+  const getTopMissedWords = () => {
+    const wordCounts: { [word: string]: number } = {};
+    sessionLogs.forEach((log) => {
+      log.missedWords.forEach((word) => {
+        const clean = word.toLowerCase().replace(/[.,!?;:"()“”]/g, '').trim();
+        if (clean) {
+          wordCounts[clean] = (wordCounts[clean] || 0) + 1;
+        }
+      });
+    });
+
+    return Object.entries(wordCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([word]) => word);
+  };
+
+  const topMissed = getTopMissedWords();
+
   const handleOcrMock = () => {
     Alert.alert(
       'Tính năng Premium AI',
@@ -91,6 +146,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
         }
       ]
     );
+  };
+
+  const formatDate = (isoString: string) => {
+    try {
+      const d = new Date(isoString);
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch {
+      return '';
+    }
   };
 
   return (
@@ -119,6 +184,104 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
           <Text style={[styles.subTitle, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>
             Dạy bé lớp 1 đánh vần & đọc chữ trơn chuẩn sư phạm
           </Text>
+        </View>
+
+        {/* 📊 Bảng Báo Cáo Học Tập (Parent Dashboard) */}
+        <View style={[
+          styles.dashboardCard,
+          {
+            backgroundColor: isDark ? COLORS.cardBgDark : COLORS.cardBg,
+            borderColor: isDark ? '#2D3748' : COLORS.border
+          }
+        ]}>
+          <Text style={[styles.dashboardTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>📊 Học Bạ Của Bé</Text>
+          
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statNumber}>{totalSessions}</Text>
+              <Text style={[styles.statLabel, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Lượt học</Text>
+            </View>
+            <View style={[styles.statBox, styles.statBorder, { borderColor: isDark ? '#2D3748' : '#E9ECEF' }]}>
+              <Text style={[
+                styles.statNumber, 
+                { color: averageScore >= 80 ? '#2E7D32' : averageScore >= 50 ? '#EF6C00' : '#C62828' }
+              ]}>
+                {averageScore}%
+              </Text>
+              <Text style={[styles.statLabel, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Đọc đúng</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { fontSize: topMissed.length > 0 ? 14 : 20 }]}>
+                {topMissed.length > 0 ? topMissed.join(', ') : '-'}
+              </Text>
+              <Text style={[styles.statLabel, { color: isDark ? '#A0AEC0' : COLORS.muted }]}>Cần luyện thêm</Text>
+            </View>
+          </View>
+
+          {totalSessions > 0 && (
+            <View style={styles.historyContainer}>
+              <TouchableOpacity
+                style={styles.historyToggleBtn}
+                onPress={() => setShowHistory(!showHistory)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.historyToggleText}>
+                  {showHistory ? '🔼 Ẩn lịch sử chi tiết' : '🔽 Xem lịch sử chi tiết'}
+                </Text>
+              </TouchableOpacity>
+
+              {showHistory && (
+                <View style={styles.historyList}>
+                  {sessionLogs.map((log) => {
+                    const isPerfect = log.score === 100;
+                    const isOk = log.score >= 70;
+                    return (
+                      <View 
+                        key={log.id} 
+                        style={[
+                          styles.historyItem, 
+                          { borderBottomColor: isDark ? '#2D3748' : '#F1F3F5' }
+                        ]}
+                      >
+                        <View style={styles.historyHeader}>
+                          <Text style={[styles.historyDate, { color: isDark ? '#718096' : COLORS.muted }]}>
+                            {formatDate(log.date)}
+                          </Text>
+                          <View style={[
+                            styles.scoreBadge,
+                            { backgroundColor: isPerfect ? '#E2F0D9' : isOk ? '#FFF2CC' : '#FCE4D6' }
+                          ]}>
+                            <Text style={[
+                              styles.scoreBadgeText,
+                              { color: isPerfect ? '#385723' : isOk ? '#D5A600' : '#C65911' }
+                            ]}>
+                              {log.score}%
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={[styles.historyText, { color: isDark ? COLORS.textDark : COLORS.text }]} numberOfLines={1}>
+                          {log.text}
+                        </Text>
+                        {log.missedWords.length > 0 && (
+                          <Text style={styles.historyMissedText} numberOfLines={1}>
+                            Sai: {log.missedWords.join(', ')}
+                          </Text>
+                        )}
+                      </View>
+                    );
+                  })}
+                  
+                  <TouchableOpacity
+                    style={styles.clearHistoryBtn}
+                    onPress={handleClearHistory}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.clearHistoryText}>🗑️ Xóa toàn bộ lịch sử</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         {/* Khung nhập văn bản */}
@@ -369,8 +532,6 @@ const styles = StyleSheet.create({
   sampleSnippet: {
     fontSize: 13,
   },
-  
-  // Custom passages list specific styling
   passageContainer: {
     flexDirection: 'row',
     borderRadius: 16,
@@ -402,5 +563,110 @@ const styles = StyleSheet.create({
   },
   deleteBtnText: {
     fontSize: 18,
+  },
+  
+  // Dashboard Card Specific Styling
+  dashboardCard: {
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+    marginBottom: 24,
+  },
+  dashboardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  statBorder: {
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+  },
+  statNumber: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  historyContainer: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    paddingTop: 12,
+  },
+  historyToggleBtn: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  historyToggleText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  historyList: {
+    marginTop: 10,
+    maxHeight: 250,
+  },
+  historyItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  historyDate: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  scoreBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  scoreBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  historyText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  historyMissedText: {
+    fontSize: 11,
+    color: '#C62828',
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  clearHistoryBtn: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  clearHistoryText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#C62828',
   },
 });

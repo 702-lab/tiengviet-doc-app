@@ -1,15 +1,20 @@
 {
   "expo": {
-    "name": "tiengviet-doc-app",
+    "name": "Gia Sư Tập Đọc",
     "slug": "tiengviet-doc-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lab702.tiengvietdoc",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Ứng dụng cần sử dụng Micro để ghi âm và đánh giá giọng đọc của bé."
+      }
     },
     "android": {
+      "package": "com.lab702.tiengvietdoc",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
