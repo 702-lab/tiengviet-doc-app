@@ -142,7 +142,7 @@ export async function loadCustomPassages(): Promise<string[]> {
 }
 
 /**
- * Saves a new reading session assessment log to the history list.
+ * Saves a new reading session assessment log to the history list. Syncs to Supabase if authenticated.
  */
 export async function saveSessionLog(log: Omit<SessionLog, 'id'>): Promise<SessionLog[]> {
   try {
@@ -152,35 +152,84 @@ export async function saveSessionLog(log: Omit<SessionLog, 'id'>): Promise<Sessi
       id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     };
     
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data, error } = await supabase
+        .from('session_logs')
+        .insert({
+          user_id: session.user.id,
+          date: newLog.date,
+          text: newLog.text,
+          score: newLog.score,
+          missed_words: newLog.missedWords,
+        })
+        .select()
+        .single();
+        
+      if (data && !error) {
+        newLog.id = data.id; // Map to remote UUID
+      }
+    }
+    
     // Unshift to place latest logs at the top
     const updatedLogs = [newLog, ...logs];
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedLogs));
     return updatedLogs;
   } catch (error) {
-    console.error('Failed to save session log to storage:', error);
+    console.error('Failed to save session log:', error);
     return [];
   }
 }
 
 /**
- * Loads the list of historical session logs.
+ * Loads the list of historical session logs. Syncs from Supabase if authenticated.
  */
 export async function loadSessionLogs(): Promise<SessionLog[]> {
   try {
-    const data = await AsyncStorage.getItem(HISTORY_KEY);
-    return data ? JSON.parse(data) : [];
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data, error } = await supabase
+        .from('session_logs')
+        .select('id, date, text, score, missed_words')
+        .eq('user_id', session.user.id)
+        .order('date', { ascending: false });
+        
+      if (data && !error) {
+        const list: SessionLog[] = data.map((row: any) => ({
+          id: row.id,
+          date: row.date,
+          text: row.text,
+          score: row.score,
+          missedWords: row.missed_words || [],
+        }));
+        // Cache locally
+        await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+        return list;
+      }
+    }
+    
+    const localData = await AsyncStorage.getItem(HISTORY_KEY);
+    return localData ? JSON.parse(localData) : [];
   } catch (error) {
-    console.error('Failed to load session logs from storage:', error);
+    console.error('Failed to load session logs:', error);
     return [];
   }
 }
 
 /**
- * Clears all historical logs.
+ * Clears all historical logs from AsyncStorage and Supabase if authenticated.
  */
 export async function clearSessionLogs(): Promise<void> {
   try {
     await AsyncStorage.removeItem(HISTORY_KEY);
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase
+        .from('session_logs')
+        .delete()
+        .eq('user_id', session.user.id);
+    }
   } catch (error) {
     console.error('Failed to clear session logs:', error);
   }
