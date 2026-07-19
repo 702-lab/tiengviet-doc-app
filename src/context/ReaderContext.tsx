@@ -47,6 +47,9 @@ interface ReaderContextType {
   // Thành tựu / Huy chương
   unlockedBadge: Achievement | null;
   clearUnlockedBadge: () => void;
+
+  // Đánh giá từ đơn lẻ trực tiếp
+  assessWordDirectly: (tokenId: string, state: 'correct' | 'incorrect') => void;
 }
 
 const ReaderContext = createContext<ReaderContextType | undefined>(undefined);
@@ -525,6 +528,13 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setRecordedAudioUri(null);
   };
 
+  const assessWordDirectly = (tokenId: string, state: 'correct' | 'incorrect') => {
+    setWordAssessment(prev => ({
+      ...(prev || {}),
+      [tokenId]: state,
+    }));
+  };
+
   useEffect(() => {
     return () => {
       stopAllSpeech();
@@ -572,6 +582,8 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         unlockedBadge,
         clearUnlockedBadge,
+        
+        assessWordDirectly,
       }}
     >
       {children}
