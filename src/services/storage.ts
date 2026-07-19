@@ -242,12 +242,27 @@ const SAMPLE_STORY_TEXTS = [
 ];
 
 /**
- * Gets the list of currently unlocked achievement IDs.
+ * Gets the list of currently unlocked achievement IDs. Syncs from Supabase if authenticated.
  */
 export async function getUnlockedAchievements(): Promise<string[]> {
   try {
-    const data = await AsyncStorage.getItem(ACHIEVEMENTS_KEY);
-    return data ? JSON.parse(data) : [];
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data, error } = await supabase
+        .from('unlocked_achievements')
+        .select('badge_id')
+        .eq('user_id', session.user.id);
+        
+      if (data && !error) {
+        const list = data.map((row: any) => row.badge_id);
+        // Cache locally
+        await AsyncStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(list));
+        return list;
+      }
+    }
+    
+    const localData = await AsyncStorage.getItem(ACHIEVEMENTS_KEY);
+    return localData ? JSON.parse(localData) : [];
   } catch (error) {
     console.error('Failed to load achievements:', error);
     return [];
@@ -255,22 +270,49 @@ export async function getUnlockedAchievements(): Promise<string[]> {
 }
 
 /**
- * Saves the list of unlocked achievement IDs.
+ * Saves the list of unlocked achievement IDs to AsyncStorage and Supabase if authenticated.
  */
 export async function saveUnlockedAchievements(ids: string[]): Promise<void> {
   try {
     await AsyncStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(ids));
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      // Clear remote achievements first to prevent duplicate keys
+      await supabase
+        .from('unlocked_achievements')
+        .delete()
+        .eq('user_id', session.user.id);
+        
+      if (ids.length > 0) {
+        const insertData = ids.map(badge_id => ({
+          user_id: session.user.id,
+          badge_id,
+        }));
+        await supabase
+          .from('unlocked_achievements')
+          .insert(insertData);
+      }
+    }
   } catch (error) {
     console.error('Failed to save achievements:', error);
   }
 }
 
 /**
- * Clears all unlocked achievements (useful for resetting).
+ * Clears all unlocked achievements from AsyncStorage and Supabase if authenticated.
  */
 export async function clearUnlockedAchievements(): Promise<void> {
   try {
     await AsyncStorage.removeItem(ACHIEVEMENTS_KEY);
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase
+        .from('unlocked_achievements')
+        .delete()
+        .eq('user_id', session.user.id);
+    }
   } catch (error) {
     console.error('Failed to clear achievements:', error);
   }
