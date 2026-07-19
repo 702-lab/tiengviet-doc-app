@@ -43,9 +43,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
   const isDark = theme === 'dark';
 
   useEffect(() => {
-    loadCustomPassages().then(setCustomPassages);
-    loadSessionLogs().then(setSessionLogs);
-    getUnlockedAchievements().then(setUnlockedBadges);
+    const reloadData = () => {
+      loadCustomPassages().then(setCustomPassages);
+      loadSessionLogs().then(setSessionLogs);
+      getUnlockedAchievements().then(setUnlockedBadges);
+    };
+
+    reloadData();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        reloadData();
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleStartPlay = (textToPlay: string) => {
