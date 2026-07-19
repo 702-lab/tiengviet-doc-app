@@ -10,16 +10,70 @@ import {
   Platform,
   Alert
 } from 'react-native';
-import { useReader } from '../context/ReaderContext';
+import { useReader, StoryBook } from '../context/ReaderContext';
 import { loadCustomPassages, saveCustomPassages, loadSessionLogs, clearSessionLogs, getUnlockedAchievements, clearUnlockedAchievements, SessionLog } from '../services/storage';
 import { ACHIEVEMENTS } from '../theme/achievements';
 import { supabase } from '../services/supabaseClient';
 import { COLORS } from '../theme/colors';
 
-const SAMPLE_STORIES = [
-  { title: '🐱 Con mèo nhà em', text: 'Con mèo nhà em lông màu trắng muốt. Nó rất ngoan và thích bắt chuột.' },
-  { title: '☀️ Buổi sáng quê em', text: 'Buổi sáng quê em gió mát rượi. Ông mặt trời đỏ rực nhô lên sau lũy tre làng.' },
-  { title: '🐠 Chú cá vàng lấp lánh', text: 'Chú cá vàng bơi lội tung tăng trong bể nước. Vảy cá vàng óng lấp lánh như dát vàng.' }
+const SAMPLE_STORIES: StoryBook[] = [
+  {
+    id: 'story-cat',
+    title: 'Con mèo nhà em 🐱',
+    icon: '🐱',
+    pages: [
+      {
+        text: 'Con mèo nhà em lông màu trắng muốt.',
+        image: '🐱🤍'
+      },
+      {
+        text: 'Nó rất ngoan và thích bắt chuột.',
+        image: '🐭⚡'
+      },
+      {
+        text: 'Em rất yêu quý chú mèo nhỏ này.',
+        image: '👧❤️'
+      }
+    ]
+  },
+  {
+    id: 'story-morning',
+    title: 'Buổi sáng quê em 🌅',
+    icon: '🌅',
+    pages: [
+      {
+        text: 'Buổi sáng quê em gió mát rượi.',
+        image: '🌬️🌾'
+      },
+      {
+        text: 'Ông mặt trời đỏ rực nhô lên sau lũy tre làng.',
+        image: '☀️🎋'
+      },
+      {
+        text: 'Tiếng chim hót líu lo chào ngày mới.',
+        image: '🐦🎵'
+      }
+    ]
+  },
+  {
+    id: 'story-fish',
+    title: 'Chú cá vàng đáng yêu 🐠',
+    icon: '🐠',
+    pages: [
+      {
+        text: 'Chú cá vàng bơi lội tung tăng trong bể nước.',
+        image: '🐠💦'
+      },
+      {
+        text: 'Vảy cá vàng óng lấp lánh như dát vàng.',
+        image: '✨💛'
+      },
+      {
+        text: 'Mỗi khi bơi, đuôi chú xòe rộng như cánh quạt.',
+        image: '💃🌊'
+      }
+    ]
+  }
 ];
 
 interface HomeScreenProps {
@@ -27,7 +81,7 @@ interface HomeScreenProps {
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) => {
-  const { setText, theme, toggleTheme } = useReader();
+  const { setText, theme, toggleTheme, setActiveStorybook } = useReader();
   const [inputText, setInputText] = useState('');
   const [customPassages, setCustomPassages] = useState<string[]>([]);
   const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
@@ -66,17 +120,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
       return;
     }
 
+    setActiveStorybook(null);
     setText(textToPlay);
     
     // Nếu là đoạn văn tự soạn chưa có trong danh sách, lưu lại
-    const isSample = SAMPLE_STORIES.some(s => s.text === textToPlay);
+    const isSample = SAMPLE_STORIES.some(s => s.pages.some(p => p.text === textToPlay));
     const isAlreadySaved = customPassages.includes(textToPlay);
     if (!isSample && !isAlreadySaved) {
       const updated = [textToPlay, ...customPassages];
       setCustomPassages(updated);
       saveCustomPassages(updated);
     }
+    onNavigateToReader();
+  };
 
+  const handleSelectStorybook = (story: StoryBook) => {
+    setActiveStorybook(story);
+    setText(story.pages[0].text);
     onNavigateToReader();
   };
 
@@ -439,16 +499,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
                 borderColor: isDark ? COLORS.borderDark : COLORS.border
               }
             ]}
-            onPress={() => handleStartPlay(story.text)}
+            onPress={() => handleSelectStorybook(story)}
           >
-            <Text style={[styles.storyTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
-              {story.title}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <Text style={{ fontSize: 24 }}>{story.icon}</Text>
+              <Text style={[styles.storyTitle, { color: isDark ? COLORS.textDark : COLORS.text, marginBottom: 0 }]}>
+                {story.title}
+              </Text>
+            </View>
             <Text 
               numberOfLines={2} 
               style={[styles.storySnippet, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}
             >
-              {story.text}
+              {story.pages.map(p => p.text).join(' ')}
             </Text>
           </TouchableOpacity>
         ))}

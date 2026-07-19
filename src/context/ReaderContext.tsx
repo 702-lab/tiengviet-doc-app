@@ -9,6 +9,16 @@ import { Achievement, ACHIEVEMENTS } from '../theme/achievements';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 
+export interface StoryBook {
+  id: string;
+  title: string;
+  icon: string;
+  pages: {
+    text: string;
+    image: string; // Emoji
+  }[];
+}
+
 interface ReaderContextType {
   text: string;
   tokens: Token[];
@@ -50,6 +60,10 @@ interface ReaderContextType {
 
   // Đánh giá từ đơn lẻ trực tiếp
   assessWordDirectly: (tokenId: string, state: 'correct' | 'incorrect') => void;
+
+  // Luyện đọc tập truyện đa trang minh họa
+  activeStorybook: StoryBook | null;
+  setActiveStorybook: (story: StoryBook | null) => void;
 }
 
 const ReaderContext = createContext<ReaderContextType | undefined>(undefined);
@@ -86,6 +100,9 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Trạng thái huy chương vừa mở khóa
   const [unlockedBadge, setUnlockedBadge] = useState<Achievement | null>(null);
   const clearUnlockedBadge = () => setUnlockedBadge(null);
+
+  // Trạng thái tập truyện minh họa đa trang đang đọc
+  const [activeStorybook, setActiveStorybook] = useState<StoryBook | null>(null);
 
   // Giọng đọc miền Bắc/Nam/Trung
   const [dialect, _setDialect] = useState<'north' | 'south' | 'central'>('north');
@@ -584,6 +601,9 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         clearUnlockedBadge,
         
         assessWordDirectly,
+
+        activeStorybook,
+        setActiveStorybook,
       }}
     >
       {children}

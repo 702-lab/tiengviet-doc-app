@@ -19,10 +19,35 @@ interface ReaderScreenProps {
 }
 
 export const ReaderScreen: React.FC<ReaderScreenProps> = ({ onNavigateToHome }) => {
-  const { tokens, activeTokenId, theme, stop, unlockedBadge, clearUnlockedBadge } = useReader();
+  const { tokens, activeTokenId, theme, stop, unlockedBadge, clearUnlockedBadge, activeStorybook, setText } = useReader();
   const [activeTab, setActiveTab] = useState<'practice' | 'phonics' | 'visual'>('practice');
   const [pressedModalBtn, setPressedModalBtn] = useState(false);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const isDark = theme === 'dark';
+
+  // Tự động lùi về trang đầu khi đổi truyện
+  useEffect(() => {
+    setCurrentPageIndex(0);
+  }, [activeStorybook]);
+
+  const handlePrevPage = () => {
+    if (!activeStorybook || currentPageIndex === 0) return;
+    const prev = currentPageIndex - 1;
+    setCurrentPageIndex(prev);
+    setText(activeStorybook.pages[prev].text);
+  };
+
+  const handleNextPage = () => {
+    if (!activeStorybook) return;
+    if (currentPageIndex === activeStorybook.pages.length - 1) {
+      // Đọc xong toàn bộ tập truyện -> quay lại Home
+      handleBack();
+      return;
+    }
+    const next = currentPageIndex + 1;
+    setCurrentPageIndex(next);
+    setText(activeStorybook.pages[next].text);
+  };
 
   const handleBack = () => {
     stop();
@@ -88,8 +113,47 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({ onNavigateToHome }) 
           borderBottomColor: isDark ? COLORS.borderDark : COLORS.border
         }
       ]}>
+        {activeStorybook && (
+          <View style={[styles.illustrationCard, { backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF', borderColor: isDark ? COLORS.borderDark : '#E5E5E5' }]}>
+            <Text style={styles.illustrationText}>
+              {activeStorybook.pages[currentPageIndex]?.image}
+            </Text>
+          </View>
+        )}
         <KaraokeText />
       </View>
+
+      {/* 2b. Pager Controls cho Sách Truyện */}
+      {activeStorybook && (
+        <View style={[
+          styles.pagerContainer, 
+          { 
+            backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+            borderBottomColor: isDark ? COLORS.borderDark : '#E5E5E5'
+          }
+        ]}>
+          <TouchableOpacity 
+            disabled={currentPageIndex === 0} 
+            onPress={handlePrevPage}
+            style={[styles.pagerBtn, currentPageIndex === 0 && { opacity: 0.4 }]}
+          >
+            <Text style={[styles.pagerBtnText, { color: COLORS.primary }]}>◀ Trang trước</Text>
+          </TouchableOpacity>
+          
+          <Text style={[styles.pagerIndicator, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            Trang {currentPageIndex + 1} / {activeStorybook.pages.length}
+          </Text>
+
+          <TouchableOpacity 
+            onPress={handleNextPage}
+            style={styles.pagerBtn}
+          >
+            <Text style={[styles.pagerBtnText, { color: COLORS.primary }]}>
+              {currentPageIndex === activeStorybook.pages.length - 1 ? 'Hoàn thành 🏁' : 'Trang sau ▶'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* 3. Tab Bar điều hướng các công cụ */}
       <View style={[
@@ -356,5 +420,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '900',
     letterSpacing: 0.8,
+  },
+  illustrationCard: {
+    borderRadius: 18,
+    borderWidth: 2,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    width: '100%',
+  },
+  illustrationText: {
+    fontSize: 48,
+  },
+  pagerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1.5,
+  },
+  pagerBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  pagerBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  pagerIndicator: {
+    fontSize: 14,
+    fontWeight: '900',
   },
 });
