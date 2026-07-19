@@ -8,12 +8,14 @@ import {
   ScrollView, 
   KeyboardAvoidingView, 
   Platform,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useReader, StoryBook } from '../context/ReaderContext';
 import { loadCustomPassages, saveCustomPassages, loadSessionLogs, clearSessionLogs, getUnlockedAchievements, clearUnlockedAchievements, SessionLog } from '../services/storage';
 import { ACHIEVEMENTS } from '../theme/achievements';
 import { calculateStats, calculateStreak } from '../services/dashboard';
+import { Chapter, Lesson, Exercise, fetchSyllabus } from '../services/syllabus';
 import { supabase } from '../services/supabaseClient';
 import { COLORS } from '../theme/colors';
 
@@ -95,6 +97,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
   const [isClearPressed, setIsClearPressed] = useState(false);
   const [isLogoutPressed, setIsLogoutPressed] = useState(false);
 
+  // Trạng thái lộ trình học giáo khoa Lớp 1
+  const [activeHomeTab, setActiveHomeTab] = useState<'practice' | 'syllabus'>('practice');
+  const [syllabusData, setSyllabusData] = useState<{ chapters: Chapter[]; lessons: Lesson[]; exercises: Exercise[] }>({ chapters: [], lessons: [], exercises: [] });
+  const [isLoadingSyllabus, setIsLoadingSyllabus] = useState(false);
+
   const isDark = theme === 'dark';
 
   useEffect(() => {
@@ -102,6 +109,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
       loadCustomPassages().then(setCustomPassages);
       loadSessionLogs().then(setSessionLogs);
       getUnlockedAchievements().then(setUnlockedBadges);
+      
+      setIsLoadingSyllabus(true);
+      fetchSyllabus().then(data => {
+        setSyllabusData(data);
+        setIsLoadingSyllabus(false);
+      });
     };
 
     reloadData();
@@ -141,6 +154,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
     onNavigateToReader();
   };
 
+  const handleSelectSyllabusExercise = (exercise: Exercise) => {
+    const story: StoryBook = {
+      id: exercise.id,
+      title: exercise.title,
+      icon: exercise.illustration,
+      pages: [{ text: exercise.text, image: exercise.illustration }]
+    };
+    setActiveStorybook(story);
+    setText(exercise.text);
+    onNavigateToReader();
+  };
+
   const handleDeletePassage = (indexToDelete: number) => {
     Alert.alert(
       'Xóa bài đọc',
@@ -151,7 +176,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
           text: 'Xóa', 
           style: 'destructive',
           onPress: () => {
-            const updated = customPassages.filter((_, idx) => idx !== indexToDelete);
+            const updated = customPassages.filter((_: string, idx: number) => idx !== indexToDelete);
             setCustomPassages(updated);
             saveCustomPassages(updated);
           }
@@ -258,7 +283,38 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
         </View>
       </View>
 
+      {/* Tab bar chính */}
+      <View style={[
+        styles.homeTabBar, 
+        { 
+          backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF', 
+          borderColor: isDark ? COLORS.borderDark : COLORS.border 
+        }
+      ]}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={[styles.homeTabItem, activeHomeTab === 'practice' && styles.activeHomeTabItem]}
+          onPress={() => setActiveHomeTab('practice')}
+        >
+          <Text style={[styles.homeTabLabel, activeHomeTab === 'practice' && styles.activeHomeTabLabel, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            🏠 Tự học & Ôn tập
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={[styles.homeTabItem, activeHomeTab === 'syllabus' && styles.activeHomeTabItem]}
+          onPress={() => setActiveHomeTab('syllabus')}
+        >
+          <Text style={[styles.homeTabLabel, activeHomeTab === 'syllabus' && styles.activeHomeTabLabel, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+            📚 Giáo trình Lớp 1
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {activeHomeTab === 'practice' ? (
+          <>
         
         {/* Hộp soạn bài đọc */}
         <View style={[
@@ -417,7 +473,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
 
               {showHistory && (
                 <View style={styles.historyList}>
-                  {sessionLogs.map((log) => (
+                  {sessionLogs.map((log: SessionLog) => (
                     <View 
                       key={log.id} 
                       style={[
@@ -518,13 +574,107 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
             </Text>
           </TouchableOpacity>
         ))}
+        </>
+      ) : (
+        /* Giáo trình Lớp 1 */
+        isLoadingSyllabus ? (
+          <View style={{ padding: 40, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={{ marginTop: 10, color: isDark ? COLORS.textDark : COLORS.text, fontWeight: '700' }}>
+              Đang tải lộ trình học giáo khoa...
+            </Text>
+          </View>
+        ) : (
+          <View style={{ paddingVertical: 10 }}>
+            {syllabusData.chapters.map((chapter: Chapter) => {
+              const chapterLessons = syllabusData.lessons.filter((l: Lesson) => l.chapter_id === chapter.id);
+              return (
+                <View key={chapter.id} style={styles.chapterSection}>
+                  {/* Tiêu đề chương/tuần học */}
+                  <View style={[styles.chapterHeaderCard, { backgroundColor: isDark ? '#142F19' : '#E8F5E9', borderColor: COLORS.primary }]}>
+                    <Text style={[styles.chapterHeaderTitle, { color: COLORS.primary }]}>
+                      {chapter.title}
+                    </Text>
+                  </View>
+
+                  {/* Danh sách các bài học */}
+                  {chapterLessons.map((lesson: Lesson) => {
+                    const lessonExercises = syllabusData.exercises.filter((e: Exercise) => e.lesson_id === lesson.id);
+                    return (
+                      <View 
+                        key={lesson.id} 
+                        style={[
+                          styles.lessonCard, 
+                          { 
+                            backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF', 
+                            borderColor: isDark ? COLORS.borderDark : COLORS.border,
+                            borderBottomColor: isDark ? '#162228' : '#D5D5D5' 
+                          }
+                        ]}
+                      >
+                        <Text style={[styles.lessonTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+                          {lesson.title}
+                        </Text>
+                        {lesson.description && (
+                          <Text style={[styles.lessonDesc, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}>
+                            {lesson.description}
+                          </Text>
+                        )}
+
+                        {/* Các bài tập đọc thuộc bài học */}
+                        <View style={styles.exercisesGrid}>
+                          {lessonExercises.map((exercise: Exercise) => (
+                            <TouchableOpacity
+                              key={exercise.id}
+                              activeOpacity={0.8}
+                              onPress={() => handleSelectSyllabusExercise(exercise)}
+                              style={[
+                                styles.exerciseItemBtn,
+                                {
+                                  backgroundColor: isDark ? COLORS.bgDark : '#F1F8E9',
+                                  borderColor: '#C5E1A5',
+                                }
+                              ]}
+                            >
+                              <Text style={{ fontSize: 18 }}>{exercise.illustration}</Text>
+                              <Text style={[styles.exerciseItemBtnText, { color: isDark ? COLORS.textDark : COLORS.text }]}>
+                                {exercise.title}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+
+                        {/* Nút bài giảng (sắp ra mắt) */}
+                        <TouchableOpacity
+                          disabled
+                          style={[
+                            styles.lectureBtn,
+                            {
+                              backgroundColor: isDark ? '#1F1F1F' : '#F5F5F5',
+                              borderColor: isDark ? '#2D2D2D' : '#E0E0E0',
+                            }
+                          ]}
+                        >
+                          <Text style={[styles.lectureBtnText, { color: '#BDBDBD' }]}>
+                            🎥 Bài giảng video & khẩu hình mẫu (Sắp ra mắt)
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })}
+          </View>
+        )
+      )}
 
         {/* Danh sách bài tự soạn */}
         <Text style={[styles.sectionTitle, { color: isDark ? COLORS.textDark : COLORS.text }]}>
           📝 Bài tự soạn của ba mẹ
         </Text>
         {customPassages.length > 0 ? (
-          customPassages.map((passage, index) => (
+          customPassages.map((passage: string, index: number) => (
             <View 
               key={index}
               style={[
@@ -882,5 +1032,93 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '900',
     color: '#FF9800',
+  },
+  homeTabBar: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 16,
+    borderWidth: 2,
+    overflow: 'hidden',
+  },
+  homeTabItem: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeHomeTabItem: {
+    backgroundColor: '#E8F5E9',
+    borderBottomWidth: 4,
+    borderBottomColor: '#58CC02',
+  },
+  homeTabLabel: {
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  activeHomeTabLabel: {
+    color: '#58CC02',
+  },
+  chapterSection: {
+    marginBottom: 20,
+  },
+  chapterHeaderCard: {
+    borderRadius: 16,
+    borderWidth: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  chapterHeaderTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  lessonCard: {
+    borderRadius: 20,
+    borderWidth: 2,
+    borderBottomWidth: 5,
+    padding: 16,
+    marginBottom: 12,
+  },
+  lessonTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  lessonDesc: {
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  exercisesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  exerciseItemBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  exerciseItemBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  lectureBtn: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lectureBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
