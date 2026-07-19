@@ -13,6 +13,7 @@ import {
 import { useReader, StoryBook } from '../context/ReaderContext';
 import { loadCustomPassages, saveCustomPassages, loadSessionLogs, clearSessionLogs, getUnlockedAchievements, clearUnlockedAchievements, SessionLog } from '../services/storage';
 import { ACHIEVEMENTS } from '../theme/achievements';
+import { calculateStats, calculateStreak } from '../services/dashboard';
 import { supabase } from '../services/supabaseClient';
 import { COLORS } from '../theme/colors';
 
@@ -197,27 +198,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
     );
   };
 
-  // Tính toán số liệu học bạ của bé
-  const totalSessions = sessionLogs.length;
-  const averageScore = totalSessions > 0 
-    ? Math.round(sessionLogs.reduce((acc, log) => acc + log.score, 0) / totalSessions)
-    : 0;
-
-  // Lấy các từ hay đọc sai nhất (top 3)
-  const wordCounts: { [word: string]: number } = {};
-  sessionLogs.forEach((log) => {
-    log.missedWords.forEach((word) => {
-      const clean = word.toLowerCase().replace(/[.,!?;:"()“”]/g, '').trim();
-      if (clean) {
-        wordCounts[clean] = (wordCounts[clean] || 0) + 1;
-      }
-    });
-  });
-
-  const topMissedWords = Object.entries(wordCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([word]) => word);
+  // Tính toán số liệu học bạ của bé từ dashboard service
+  const { totalSessions, averageScore, topMissed: topMissedWords } = calculateStats(sessionLogs);
+  const streakDays = calculateStreak(sessionLogs);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return COLORS.primary;
@@ -239,24 +222,40 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
           </Text>
         </View>
 
-        <TouchableOpacity 
-          activeOpacity={1}
-          onPressIn={() => setIsThemePressed(true)}
-          onPressOut={() => setIsThemePressed(false)}
-          onPress={toggleTheme}
-          style={[
-            styles.themeBtn,
-            {
-              backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
-              borderColor: isDark ? COLORS.borderDark : COLORS.border,
-              borderBottomColor: isDark ? '#162228' : '#D5D5D5',
-              transform: [{ translateY: isThemePressed ? 2 : 0 }],
-              borderBottomWidth: isThemePressed ? 1 : 4,
-            }
-          ]}
-        >
-          <Text style={styles.themeBtnText}>{isDark ? '☀️' : '🌙'}</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {/* Huy hiệu ngọn lửa Streak (Duolingo style) */}
+          {streakDays > 0 && (
+            <View style={[
+              styles.streakHeaderContainer, 
+              { 
+                backgroundColor: isDark ? '#2D1B10' : '#FFF3E0', 
+                borderColor: isDark ? '#4E2D12' : '#FFE0B2' 
+              }
+            ]}>
+              <Text style={styles.streakFlameIcon}>🔥</Text>
+              <Text style={styles.streakTextCount}>{streakDays}</Text>
+            </View>
+          )}
+
+          <TouchableOpacity 
+            activeOpacity={1}
+            onPressIn={() => setIsThemePressed(true)}
+            onPressOut={() => setIsThemePressed(false)}
+            onPress={toggleTheme}
+            style={[
+              styles.themeBtn,
+              {
+                backgroundColor: isDark ? COLORS.bgSoftDark : '#FFFFFF',
+                borderColor: isDark ? COLORS.borderDark : COLORS.border,
+                borderBottomColor: isDark ? '#162228' : '#D5D5D5',
+                transform: [{ translateY: isThemePressed ? 2 : 0 }],
+                borderBottomWidth: isThemePressed ? 1 : 4,
+              }
+            ]}
+          >
+            <Text style={styles.themeBtnText}>{isDark ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -329,6 +328,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
             <View style={[styles.statBox, { backgroundColor: isDark ? COLORS.bgDark : '#F7F9FA' }]}>
               <Text style={[styles.statVal, { color: COLORS.secondary }]}>{averageScore}%</Text>
               <Text style={styles.statLbl}>Đúng trung bình</Text>
+            </View>
+            <View style={[styles.statBox, { backgroundColor: isDark ? COLORS.bgDark : '#F7F9FA' }]}>
+              <Text style={[styles.statVal, { color: '#FF9800' }]}>🔥 {streakDays}</Text>
+              <Text style={styles.statLbl}>Ngày liên tục</Text>
             </View>
           </View>
 
@@ -862,5 +865,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '900',
     letterSpacing: 0.5,
+  },
+  streakHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    gap: 4,
+  },
+  streakFlameIcon: {
+    fontSize: 15,
+  },
+  streakTextCount: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#FF9800',
   },
 });

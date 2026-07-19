@@ -1,31 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SessionLog } from './storage';
-
-// Logic dùng để tính toán số liệu học bạ của bé (giống như trong HomeScreen)
-function calculateStats(sessionLogs: SessionLog[]) {
-  const totalSessions = sessionLogs.length;
-  
-  const averageScore = totalSessions > 0 
-    ? Math.round(sessionLogs.reduce((acc, log) => acc + log.score, 0) / totalSessions)
-    : 0;
-
-  const wordCounts: { [word: string]: number } = {};
-  sessionLogs.forEach((log) => {
-    log.missedWords.forEach((word) => {
-      const clean = word.toLowerCase().replace(/[.,!?;:"()“”]/g, '').trim();
-      if (clean) {
-        wordCounts[clean] = (wordCounts[clean] || 0) + 1;
-      }
-    });
-  });
-
-  const topMissed = Object.entries(wordCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([word]) => word);
-
-  return { totalSessions, averageScore, topMissed };
-}
+import { calculateStats, calculateStreak } from './dashboard';
 
 describe('Parent Dashboard Analytics Unit Tests', () => {
   it('should return default values when history logs list is empty', () => {
@@ -72,5 +47,73 @@ describe('Parent Dashboard Analytics Unit Tests', () => {
     expect(stats.topMissed).toContain('ngoan');
     expect(stats.topMissed).not.toContain('mèo,');
     expect(stats.topMissed).not.toContain('ngoan!');
+  });
+});
+
+describe('Daily Study Streak Check Unit Tests', () => {
+  const getPastDateISO = (daysAgo: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return d.toISOString();
+  };
+
+  it('should return 0 streak for empty logs', () => {
+    expect(calculateStreak([])).toBe(0);
+  });
+
+  it('should return 1 for a single log created today', () => {
+    const logs: SessionLog[] = [
+      { id: '1', date: getPastDateISO(0), text: '', score: 90, missedWords: [] }
+    ];
+    expect(calculateStreak(logs)).toBe(1);
+  });
+
+  it('should return 1 for a single log created yesterday', () => {
+    const logs: SessionLog[] = [
+      { id: '1', date: getPastDateISO(1), text: '', score: 90, missedWords: [] }
+    ];
+    expect(calculateStreak(logs)).toBe(1);
+  });
+
+  it('should return 0 if the latest log is 2 or more days old', () => {
+    const logs: SessionLog[] = [
+      { id: '1', date: getPastDateISO(2), text: '', score: 90, missedWords: [] }
+    ];
+    expect(calculateStreak(logs)).toBe(0);
+  });
+
+  it('should return 2 for consecutive days (today and yesterday)', () => {
+    const logs: SessionLog[] = [
+      { id: '1', date: getPastDateISO(0), text: '', score: 95, missedWords: [] },
+      { id: '2', date: getPastDateISO(1), text: '', score: 90, missedWords: [] }
+    ];
+    expect(calculateStreak(logs)).toBe(2);
+  });
+
+  it('should return 3 for consecutive days (today, yesterday, and 2 days ago)', () => {
+    const logs: SessionLog[] = [
+      { id: '1', date: getPastDateISO(0), text: '', score: 95, missedWords: [] },
+      { id: '2', date: getPastDateISO(1), text: '', score: 90, missedWords: [] },
+      { id: '3', date: getPastDateISO(2), text: '', score: 85, missedWords: [] }
+    ];
+    expect(calculateStreak(logs)).toBe(3);
+  });
+
+  it('should handle duplicate reads on the same day without doubling the count', () => {
+    const logs: SessionLog[] = [
+      { id: '1', date: getPastDateISO(0), text: '', score: 95, missedWords: [] },
+      { id: '2', date: getPastDateISO(0), text: '', score: 90, missedWords: [] }, // Duplicate today
+      { id: '3', date: getPastDateISO(1), text: '', score: 80, missedWords: [] }
+    ];
+    expect(calculateStreak(logs)).toBe(2);
+  });
+
+  it('should break the streak if there is a calendar gap', () => {
+    const logs: SessionLog[] = [
+      { id: '1', date: getPastDateISO(0), text: '', score: 95, missedWords: [] },
+      // Yesterday was missed!
+      { id: '2', date: getPastDateISO(2), text: '', score: 80, missedWords: [] }
+    ];
+    expect(calculateStreak(logs)).toBe(1); // Reset to 1 (only today is active)
   });
 });
