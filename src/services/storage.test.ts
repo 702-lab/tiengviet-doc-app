@@ -35,6 +35,26 @@ vi.mock('@react-native-async-storage/async-storage', () => {
   };
 });
 
+vi.mock('./supabaseClient', () => {
+  return {
+    supabase: {
+      auth: {
+        getSession: vi.fn(async () => ({ data: { session: null }, error: null })),
+        onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+      },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        insert: vi.fn().mockResolvedValue({ error: null }),
+        upsert: vi.fn().mockResolvedValue({ error: null }),
+        delete: vi.fn().mockResolvedValue({ error: null }),
+      })),
+    },
+  };
+});
+
 describe('Storage Service Unit Tests', () => {
   beforeEach(() => {
     mockStorage = {};

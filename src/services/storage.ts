@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from './supabaseClient';
 
 export interface AppSettings {
   theme: 'light' | 'dark';
@@ -26,49 +27,116 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 /**
- * Saves application configurations (theme, dialect, reading speed) to AsyncStorage.
+ * Saves application configurations (theme, dialect, reading speed) to AsyncStorage and Supabase if authenticated.
  */
 export async function saveSettings(settings: AppSettings): Promise<void> {
   try {
     await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase
+        .from('settings')
+        .upsert({
+          user_id: session.user.id,
+          theme: settings.theme,
+          dialect: settings.dialect,
+          speed: settings.speed,
+        });
+    }
   } catch (error) {
-    console.error('Failed to save settings to storage:', error);
+    console.error('Failed to save settings:', error);
   }
 }
 
 /**
- * Loads application configurations. Falls back to default settings if empty.
+ * Loads application configurations. Falls back to remote database, then local AsyncStorage, then default settings.
  */
 export async function loadSettings(): Promise<AppSettings> {
   try {
-    const data = await AsyncStorage.getItem(SETTINGS_KEY);
-    return data ? JSON.parse(data) : DEFAULT_SETTINGS;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('theme, dialect, speed')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      if (data && !error) {
+        const settings: AppSettings = {
+          theme: data.theme as 'light' | 'dark',
+          dialect: data.dialect as 'north' | 'south' | 'central',
+          speed: Number(data.speed),
+        };
+        // Cache locally
+        await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        return settings;
+      }
+    }
+    
+    const localData = await AsyncStorage.getItem(SETTINGS_KEY);
+    return localData ? JSON.parse(localData) : DEFAULT_SETTINGS;
   } catch (error) {
-    console.error('Failed to load settings from storage:', error);
+    console.error('Failed to load settings:', error);
     return DEFAULT_SETTINGS;
   }
 }
 
 /**
- * Saves custom parent-typed reading passages list.
+ * Saves custom parent-typed reading passages list to AsyncStorage and Supabase if authenticated.
  */
 export async function saveCustomPassages(passages: string[]): Promise<void> {
   try {
     await AsyncStorage.setItem(PASSAGES_KEY, JSON.stringify(passages));
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      // Clear remote passages and re-insert to sync list exactly
+      await supabase
+        .from('custom_passages')
+        .delete()
+        .eq('user_id', session.user.id);
+        
+      if (passages.length > 0) {
+        const insertData = passages.map(text => ({
+          user_id: session.user.id,
+          text,
+        }));
+        await supabase
+          .from('custom_passages')
+          .insert(insertData);
+      }
+    }
   } catch (error) {
-    console.error('Failed to save passages to storage:', error);
+    console.error('Failed to save passages:', error);
   }
 }
 
 /**
- * Loads custom parent-typed reading passages list.
+ * Loads custom parent-typed reading passages list. Syncs from Supabase if authenticated.
  */
 export async function loadCustomPassages(): Promise<string[]> {
   try {
-    const data = await AsyncStorage.getItem(PASSAGES_KEY);
-    return data ? JSON.parse(data) : [];
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data, error } = await supabase
+        .from('custom_passages')
+        .select('text')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+        
+      if (data && !error) {
+        const list = data.map((row: any) => row.text);
+        // Cache locally
+        await AsyncStorage.setItem(PASSAGES_KEY, JSON.stringify(list));
+        return list;
+      }
+    }
+    
+    const localData = await AsyncStorage.getItem(PASSAGES_KEY);
+    return localData ? JSON.parse(localData) : [];
   } catch (error) {
-    console.error('Failed to load passages from storage:', error);
+    console.error('Failed to load passages:', error);
     return [];
   }
 }

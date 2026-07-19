@@ -4,6 +4,7 @@ import { Token, tokenizeText, ParsedSyllable } from '../services/phonicsEngine';
 import { speakAsync, stopAllSpeech } from '../services/audioManager';
 import { loadSettings, saveSettings, saveSessionLog, checkAndUnlockAchievements } from '../services/storage';
 import { playPhonicAssetAsync } from '../services/phonicsAssetPlayer';
+import { supabase } from '../services/supabaseClient';
 import { Achievement, ACHIEVEMENTS } from '../theme/achievements';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
@@ -118,6 +119,26 @@ export const ReaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }).catch((err) => {
       console.warn('Không lấy được danh sách giọng nói:', err);
     });
+  }, []);
+
+  // Lắng nghe sự kiện đăng nhập / đăng xuất để tải lại cấu hình tương ứng
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_IN') {
+        try {
+          const settings = await loadSettings();
+          setTheme(settings.theme);
+          _setDialect(settings.dialect);
+          _setSpeed(settings.speed);
+        } catch {}
+      } else if (event === 'SIGNED_OUT') {
+        setTheme('light');
+        _setDialect('north');
+        _setSpeed(0.8);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Tự động lưu thiết lập khi có thay đổi
