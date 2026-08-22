@@ -15,7 +15,11 @@ import { supabase } from '../services/supabaseClient';
 import { useReader } from '../context/ReaderContext';
 import { COLORS } from '../theme/colors';
 
-export const AuthScreen: React.FC = () => {
+interface AuthScreenProps {
+  onGuestMode?: () => void;
+}
+
+export const AuthScreen: React.FC<AuthScreenProps> = ({ onGuestMode }) => {
   const { theme } = useReader();
   const isDark = theme === 'dark';
 
@@ -218,6 +222,20 @@ export const AuthScreen: React.FC = () => {
             {isSignUp ? 'Ba mẹ đã có tài khoản? Đăng nhập tại đây' : 'Bé chưa có tài khoản? Đăng ký tại đây'}
           </Text>
         </TouchableOpacity>
+
+        {/* Nút Dùng thử ngay không cần tài khoản */}
+        {onGuestMode && (
+          <TouchableOpacity
+            style={styles.guestBtn}
+            onPress={onGuestMode}
+            // @ts-ignore
+            onClick={onGuestMode}
+          >
+            <Text style={[styles.guestBtnText, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}>
+              🚀 Bỏ qua & Trải nghiệm ngay (Chế độ Khách)
+            </Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -296,5 +314,15 @@ const styles = StyleSheet.create({
   toggleBtnText: {
     fontSize: 13,
     fontWeight: '800',
+  },
+  guestBtn: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginTop: 6,
+  },
+  guestBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });
