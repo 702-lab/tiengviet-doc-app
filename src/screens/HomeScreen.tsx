@@ -18,6 +18,7 @@ import { calculateStats, calculateStreak } from '../services/dashboard';
 import { Chapter, Lesson, Exercise, fetchSyllabus } from '../services/syllabus';
 import { supabase } from '../services/supabaseClient';
 import { COLORS } from '../theme/colors';
+import { OCRScannerModal } from '../components/OCRScannerModal';
 
 const SAMPLE_STORIES: StoryBook[] = [
   {
@@ -93,9 +94,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
   
   // Trạng thái nhấn nút 3D (Duolingo style)
   const [isPlayPressed, setIsPlayPressed] = useState(false);
+  const [isOcrPressed, setIsOcrPressed] = useState(false);
   const [isThemePressed, setIsThemePressed] = useState(false);
   const [isClearPressed, setIsClearPressed] = useState(false);
   const [isLogoutPressed, setIsLogoutPressed] = useState(false);
+
+  // Trạng thái quét sách giáo khoa OCR
+  const [showOcrModal, setShowOcrModal] = useState(false);
 
   // Trạng thái lộ trình học giáo khoa Lớp 1
   const [activeHomeTab, setActiveHomeTab] = useState<'practice' | 'syllabus'>('practice');
@@ -344,6 +349,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
             value={inputText}
             onChangeText={setInputText}
           />
+
+          <TouchableOpacity
+            activeOpacity={1}
+            onPressIn={() => setIsOcrPressed(true)}
+            onPressOut={() => setIsOcrPressed(false)}
+            onPress={() => setShowOcrModal(true)}
+            style={[
+              styles.ocrScanBtn,
+              {
+                backgroundColor: COLORS.secondary,
+                borderBottomColor: '#2B8296',
+                transform: [{ translateY: isOcrPressed ? 2 : 0 }],
+                borderBottomWidth: isOcrPressed ? 1 : 4,
+              }
+            ]}
+          >
+            <Text style={styles.ocrScanBtnText}>📷 QUÉT SÁCH GIÁO KHOA (AI OCR)</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             activeOpacity={1}
@@ -726,6 +749,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
           </View>
         )}
       </ScrollView>
+
+      {/* Modal Quét ảnh AI OCR */}
+      <OCRScannerModal
+        visible={showOcrModal}
+        onClose={() => setShowOcrModal(false)}
+        onApplyText={(extractedText) => {
+          setInputText(extractedText);
+          Alert.alert('Thành công', 'Đã chuyển nội dung trang sách vào ô soạn bài!');
+        }}
+        isDark={isDark}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -1120,5 +1154,20 @@ const styles = StyleSheet.create({
   lectureBtnText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  ocrScanBtn: {
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#2B8296',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  ocrScanBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontSize: 13,
+    letterSpacing: 0.5,
   },
 });
