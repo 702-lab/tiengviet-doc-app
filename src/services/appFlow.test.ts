@@ -122,4 +122,26 @@ describe('E2E Simulation: End-to-End User Reading and Assessment Flow', () => {
     expect(resultIncomplete.assessmentResult[tokens[2].id]).toBe('correct');
     expect(resultIncomplete.assessmentResult[tokens[4].id]).toBe('incorrect');
   });
+
+  it('should simulate an OCR scan to reading session journey: photo OCR -> clean text -> tokenize -> phonics breakdown', async () => {
+    const { recognizeTextFromImage } = await import('./ocrService');
+    
+    // Simulate image OCR scan
+    const ocrResult = await recognizeTextFromImage('file:///testbook/page_grade1.jpg');
+    expect(ocrResult.text.length).toBeGreaterThan(0);
+    expect(ocrResult.confidence).toBeGreaterThan(0.8);
+
+    // Tokenize the scanned text
+    const tokens = tokenizeText(ocrResult.text, 'north');
+    const wordTokens = tokens.filter(t => t.isWord);
+    expect(wordTokens.length).toBe(ocrResult.wordCount);
+
+    // Verify all words have phonics decomposition and spelling steps generated
+    wordTokens.forEach(word => {
+      expect(word.spellingResult).toBeDefined();
+      expect(word.spellingResult?.parsed).toBeDefined();
+      expect(word.spellingResult?.parsed.rhyme).toBeDefined();
+      expect(word.spellingResult?.steps.length).toBeGreaterThan(0);
+    });
+  });
 });
