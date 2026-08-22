@@ -109,6 +109,10 @@ export const OCRScannerModal: React.FC<OCRScannerModalProps> = ({
     onClose();
   };
 
+  if (!visible) {
+    return null;
+  }
+
   return (
     <Modal
       visible={visible}
@@ -134,7 +138,12 @@ export const OCRScannerModal: React.FC<OCRScannerModalProps> = ({
                 Chụp ảnh trang sách để nhận diện chữ tiếng Việt tự động
               </Text>
             </View>
-            <TouchableOpacity onPress={handleCloseModal} style={styles.closeBtn}>
+            <TouchableOpacity 
+              onPress={handleCloseModal} 
+              // @ts-ignore
+              onClick={handleCloseModal}
+              style={styles.closeBtn}
+            >
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -145,6 +154,8 @@ export const OCRScannerModal: React.FC<OCRScannerModalProps> = ({
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
                 onPress={() => handlePickImage(true)}
+                // @ts-ignore
+                onClick={() => handlePickImage(true)}
                 disabled={isProcessing}
               >
                 <Text style={styles.actionBtnText}>📸 Chụp ảnh mới</Text>
@@ -153,6 +164,8 @@ export const OCRScannerModal: React.FC<OCRScannerModalProps> = ({
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: COLORS.secondary }]}
                 onPress={() => handlePickImage(false)}
+                // @ts-ignore
+                onClick={() => handlePickImage(false)}
                 disabled={isProcessing}
               >
                 <Text style={styles.actionBtnText}>🖼️ Chọn từ thư viện</Text>
@@ -219,6 +232,8 @@ export const OCRScannerModal: React.FC<OCRScannerModalProps> = ({
             <TouchableOpacity
               style={[styles.footerCancelBtn, { borderColor: isDark ? COLORS.borderDark : COLORS.border }]}
               onPress={handleCloseModal}
+              // @ts-ignore
+              onClick={handleCloseModal}
             >
               <Text style={[styles.footerCancelText, { color: isDark ? COLORS.mutedDark : COLORS.muted }]}>
                 Đóng
@@ -234,6 +249,8 @@ export const OCRScannerModal: React.FC<OCRScannerModalProps> = ({
                 }
               ]}
               onPress={handleConfirm}
+              // @ts-ignore
+              onClick={handleConfirm}
               disabled={!extractedText.trim() || isProcessing}
             >
               <Text style={styles.footerApplyText}>
@@ -253,7 +270,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16
+    padding: 16,
+    ...Platform.select({
+      web: {
+        position: 'fixed' as any,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 99999,
+      }
+    })
   },
   modalContainer: {
     width: '100%',

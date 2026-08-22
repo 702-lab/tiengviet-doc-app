@@ -355,6 +355,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
             onPressIn={() => setIsOcrPressed(true)}
             onPressOut={() => setIsOcrPressed(false)}
             onPress={() => setShowOcrModal(true)}
+            // @ts-ignore
+            onClick={() => setShowOcrModal(true)}
             style={[
               styles.ocrScanBtn,
               {
@@ -373,6 +375,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToReader }) =>
             onPressIn={() => setIsPlayPressed(true)}
             onPressOut={() => setIsPlayPressed(false)}
             onPress={() => handleStartPlay(inputText)}
+            // @ts-ignore
+            onClick={() => handleStartPlay(inputText)}
             style={[
               styles.startBtn,
               {

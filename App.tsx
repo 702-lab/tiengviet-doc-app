@@ -11,6 +11,7 @@ import { COLORS } from './src/theme/colors';
 function MainApp() {
   const [currentScreen, setCurrentScreen] = useState<'home' | 'reader'>('home');
   const [session, setSession] = useState<Session | null>(null);
+  const [isGuest, setIsGuest] = useState(true);
   const [loading, setLoading] = useState(true);
 
   const { theme } = useReader();
@@ -23,8 +24,11 @@ function MainApp() {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      if (event === 'SIGNED_OUT') {
+        setIsGuest(false);
+      }
       setLoading(false);
     });
 
@@ -40,6 +44,8 @@ function MainApp() {
     );
   }
 
+  const isAuthenticated = !!session || isGuest;
+
   return (
     <SafeAreaView style={[
       styles.safeArea, 
@@ -50,8 +56,8 @@ function MainApp() {
         backgroundColor={isDark ? COLORS.cardBgDark : COLORS.cardBg}
       />
       
-      {!session ? (
-        <AuthScreen />
+      {!isAuthenticated ? (
+        <AuthScreen onGuestMode={() => setIsGuest(true)} />
       ) : currentScreen === 'home' ? (
         <HomeScreen onNavigateToReader={() => setCurrentScreen('reader')} />
       ) : (
